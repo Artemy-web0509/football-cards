@@ -77,6 +77,7 @@ function init() {
       state = st || defaultState();
       idCounter = state.nextId || 0;
       applyOfflineIncome();
+      healAllCards();
       renderTop();
       $('#topbar').classList.remove('hidden');
       $('#admin-btn').classList.toggle('hidden', !isAdmin);

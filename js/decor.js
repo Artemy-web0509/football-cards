@@ -20,7 +20,7 @@ function groundPoly(cam, x0, z0, x1, z1, y, color) {
   const pts = projectPoly(cam, [[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]]);
   if (!pts) return null;
   const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
-  return { pts: pts.map(p => ({ x: p.x, y: p.y })), color, depth, line: false };
+  return { pts: pts.map(p => ({ x: p.x, y: p.y })), color, depth, line: false, flat: true };
 }
 
 // Ровный одноцветный пол (без клетки и мерцания). Один большой квад с запасом.

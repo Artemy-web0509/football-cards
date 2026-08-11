@@ -25,7 +25,7 @@ const ADMIN_PASS = 'ArtikartLuk0509';
 const ACCOUNTS_KEY = 'fc_accounts';
 const CUR_KEY = 'fc_current_user';
 const SAVE_PREFIX = 'fc_save_';
-const APP_VERSION = 'v12';
+const APP_VERSION = 'v13';
 const VER_KEY = 'fc_ver';
 
 function checkAppVersion() {
@@ -105,11 +105,12 @@ function generatePlayer(rarityId, pos, forcedRating, claimIt) {
 
 // Чинит старые карточки: реальный игрок всегда со своим настоящим рейтингом и редкостью
 function healPlayer(p) {
-  if (!p || !p.key || p.shadow || p.fake) return;
-  const real = REAL_PLAYERS.find(x => x.name === p.key);
+  if (!p || p.shadow || p.fake) return;
+  const real = REAL_PLAYERS.find(x => x.name === (p.key || p.name));
   if (!real) return;
   p.name = real.name; p.flag = real.flag; p.pos = real.pos;
   p.rating = real.rating; p.rarity = rarityForRating(real.rating);
+  if (!p.key) p.key = real.name;
 }
 function healAllCards() {
   if (!state) return;

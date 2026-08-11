@@ -466,8 +466,10 @@ function renderWorld() {
   polys.push(...heldCardPolys(cam, labels));
   if (state.held) drawHeldSlotMarkers(cam);
   pushRound(0.1, () => drawFigures(cam, labels));
-  polys.sort((a, b) => b.depth - a.depth);
-  for (const poly of polys) drawPoly(poly);
+  const flatPolys = polys.filter(p => p.flat);
+  const sortedPolys = polys.filter(p => !p.flat).sort((a, b) => b.depth - a.depth);
+  for (const poly of flatPolys) drawPoly(poly);
+  for (const poly of sortedPolys) drawPoly(poly);
   rounds.sort((a, b) => b.depth - a.depth);
   for (const rd of rounds) rd.draw();
   drawFog(cam);

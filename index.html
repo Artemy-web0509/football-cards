@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚽ Футбольные карточки 3D</title>
+<script>
+// Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
+(function () {
+  try {
+    var V = 'v12';
+    var prev = localStorage.getItem('fc_ver');
+    if (prev !== V) {
+      localStorage.removeItem('fc_registry');
+      localStorage.removeItem('fc_bc_id');
+      localStorage.removeItem('fc_current_user');
+      try {
+        var a = JSON.parse(localStorage.getItem('fc_accounts') || '{}');
+        for (var n in a) localStorage.removeItem('fc_save_' + n);
+      } catch (e) {}
+      localStorage.setItem('fc_ver', V);
+      location.reload();
+    }
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="style.css?v=12">
+</head>
+<body>
+
+<div id="topbar" class="hidden">
+  <div class="tb-item" id="ver-display" title="Версия игры" style="font-weight:800;">🛠 v11</div>
+  <div class="tb-item" id="coins-display">💰 0</div>
+  <div class="tb-item income" id="income-display">+0/сек</div>
+  <div class="tb-item" id="fans-display">👥 0</div>
+  <div class="tb-item user" id="user-display">👤 </div>
+  <div class="tb-item hidden" id="net-display" title="Статус сервера">🖥</div>
+  <button class="tb-logout" id="backpack-btn" title="Рюкзак (клавиша B)">🎒</button>
+  <button class="tb-logout hidden" id="admin-btn" title="Админ-панель">🛠</button>
+  <button class="tb-logout" id="logout-btn" title="Выйти">⏻</button>
+</div>
+
+<div id="broadcast" class="hidden"></div>
+
+<!-- ============ ЛОГИН / РЕГИСТРАЦИЯ ============ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">⚽</div>
+    <h1>Футбольные карточки</h1>
+    <p class="login-sub">3D-мир карточек</p>
+    <input type="text" id="login-nick" class="login-input" placeholder="Никнейм" maxlength="16" autocomplete="off">
+    <input type="password" id="login-pass" class="login-input" placeholder="Пароль" maxlength="32">
+    <div class="device-pick">
+      <div class="device-label">На чём играешь?</div>
+      <div class="device-options">
+        <button class="btn device-btn" data-device="pc">💻 Компьютер</button>
+        <button class="btn device-btn" data-device="phone">📱 Телефон</button>
+      </div>
+      <div class="device-hint" id="device-hint"></div>
+    </div>
+    <div id="login-error" class="login-error"></div>
+    <button class="btn btn-primary btn-big" id="login-btn">Войти</button>
+    <button class="btn btn-big" id="reg-btn">Зарегистрироваться</button>
+    <button class="btn btn-danger" id="reset-btn">🗑 Сбросить данные этого устройства</button>
+    <p class="login-tip">Аккаунт и прогресс сохраняются в базе — заходи с любого устройства!</p>
+  </div>
+</div>
+
+<!-- ============ 3D МИР ============ -->
+<div id="screen-world" class="screen">
+  <canvas id="world-canvas"></canvas>
+  <div class="hud-cross">+</div>
+  <div class="hud-prompt hidden" id="interact-prompt"></div>
+  <div class="hud-held hidden" id="held-card"></div>
+  <div class="hud-help">W A S D — ходить • ← → или ПКМ — камера • E или клик — действие • B — рюкзак</div>
+  <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="touch-controls" class="touch-controls hidden">
+    <div class="tc-dpad">
+      <button class="tc-btn" data-key="KeyW">▲</button>
+      <button class="tc-btn" data-key="KeyA">◀</button>
+      <button class="tc-btn" data-key="KeyS">▼</button>
+      <button class="tc-btn" data-key="KeyD">▶</button>
+    </div>
+    <div class="tc-cluster">
+      <div class="tc-rotate">
+        <button class="tc-btn" id="tc-rotl">⟲</button>
+        <button class="tc-btn" id="tc-rotr">⟳</button>
+      </div>
+      <div class="tc-actions">
+        <button class="tc-btn tc-act" id="tc-e">⚡</button>
+        <button class="tc-btn tc-act" id="tc-b">🎒</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ СПИННЕР (у поля) ============ -->
+<div id="screen-spinner" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🎡 Спиннер</h2>
+  <div class="odds-bar" id="odds-bar"></div>
+  <div class="roulette">
+    <div class="roulette-track" id="roulette-track"></div>
+    <div class="roulette-marker"></div>
+  </div>
+  <div class="spinner-actions">
+    <button class="btn btn-primary btn-big" id="spin-btn">Крутить (500 💰)</button>
+  </div>
+  <div id="spin-result" class="spin-result hidden"></div>
+  <div class="shop-note">🍀 Удачу улучшай на жёлтом табло рядом со спиннером (клавиша E)</div>
+</div>
+
+<!-- ============ ТАБЛО УДАЧИ (у спиннера) ============ -->
+<div id="screen-luck" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🍀 Табло удачи</h2>
+  <div class="shop-note">За монеты увеличивай шанс редких карточек из спиннера. Каждый уровень дороже!</div>
+  <div id="luck-upgrades"></div>
+</div>
+
+<!-- ============ ТАБЛО ПОЛЯ (у футбольных полей) ============ -->
+<div id="screen-fieldupg" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">⚽ Табло поля</h2>
+  <div class="shop-note">Владение помогает выигрывать матчи, Доход даёт больше монет в секунду. Покупается за монеты 💰.</div>
+  <div id="fieldupg-upgrades"></div>
+</div>
+
+<!-- ============ ПОЛЕ (твоя команда) ============ -->
+<div id="screen-field" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title" id="field-title">🏟️ Моё поле</h2>
+  <div id="field-lineup"></div>
+</div>
+
+<!-- ============ РЮКЗАК ============ -->
+<div id="screen-backpack" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🎒 Рюкзак игроков</h2>
+  <div id="backpack-grid"></div>
+</div>
+
+<!-- ============ АРЕНА (центр карты) ============ -->
+<div id="screen-arena" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">⚔ Арена</h2>
+  <div class="matchsetup-info">
+    <div class="ms-line" id="arena-ms-info"></div>
+    <div class="ms-line" id="arena-pvp-status" style="color:var(--accent2);font-weight:800;"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" id="arena-tab-bot">🤖 Против бота</button>
+    <button class="tab-btn" id="arena-tab-pvp">⚔ 2 игрока</button>
+  </div>
+  <div id="arena-bots"><div id="opponents-list"></div></div>
+  <div id="arena-pvp" class="hidden">
+    <div class="shop-note">Встань на арену вместе со вторым игроком. Первый нажимает «Играть» и ждёт, второй — тоже. Матч начнётся автоматически!</div>
+    <div class="admin-row">
+      <button class="btn btn-primary btn-big" id="pvp-join">⚔ Играть (ждать соперника)</button>
+      <button class="btn" id="pvp-leave" style="display:none;">Отменить ожидание</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ МАГАЗИНЫ ============ -->
+<div id="screen-market" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🏪 Магазины</h2>
+  <div class="tabs">
+    <button class="tab-btn active" data-scr="market" data-tab="sell">Продать карточки</button>
+    <button class="tab-btn" data-scr="market" data-tab="market">🏪 Рынок игроков</button>
+    <button class="tab-btn" data-scr="market" data-tab="buffs">Баффы</button>
+    <button class="tab-btn" data-scr="market" data-tab="cups">Кубки</button>
+  </div>
+  <div id="shop-sell" class="tab-page active"></div>
+  <div id="shop-market" class="tab-page"></div>
+  <div id="shop-buffs" class="tab-page"></div>
+  <div id="shop-cups" class="tab-page"></div>
+</div>
+
+<!-- ============ АДМИН-ПАНЕЛЬ ============ -->
+<div id="screen-admin" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🛠 Админ-панель</h2>
+  <div class="admin-card">
+    <h3>Кому выдать?</h3>
+    <input type="text" id="adm-target" class="login-input" placeholder="Ник игрока (пусто = себе)">
+  </div>
+  <div class="admin-card">
+    <h3>💰 Ресурсы</h3>
+    <input type="number" id="adm-amount" class="login-input" value="1000" min="0" placeholder="Количество">
+    <div class="admin-row">
+      <button class="btn" id="adm-give-coins">Дать монеты 💰</button>
+      <button class="btn" id="adm-give-fans">Дать фанатов 👥</button>
+    </div>
+  </div>
+  <div class="admin-card">
+    <h3>🎴 Выдать игрока (из спиннера, бесплатно)</h3>
+    <select id="adm-rarity" class="login-input"></select>
+    <select id="adm-pos" class="login-input"></select>
+    <input type="number" id="adm-rating" class="login-input" placeholder="Рейтинг 62–110 (пусто = случайный)" min="1" max="110">
+    <button class="btn" id="adm-give-player">Выдать игрока</button>
+  </div>
+  <div class="admin-card">
+    <h3>💞 Особые карточки</h3>
+    <div class="admin-row">
+      <button class="btn" id="adm-give-mom">Дать Маму 👩</button>
+      <button class="btn" id="adm-give-dad">Дать Папу 👨</button>
+    </div>
+    <div class="shop-note">Поставь их вместе на базу (в основу) — на них упадёт баф любви: доход ×2 обоим 💞</div>
+  </div>
+  <div class="admin-card">
+    <h3>📢 Сообщение всем</h3>
+    <input type="text" id="adm-broadcast" class="login-input" placeholder="Текст сообщения для всех" maxlength="200">
+    <button class="btn" id="adm-broadcast-btn">Отправить по центру экрана 📢</button>
+  </div>
+  <div class="admin-card">
+    <h3>🧬 Мутация</h3>
+    <select id="adm-mut" class="login-input"></select>
+    <input type="number" id="adm-mut-mult" class="login-input" placeholder="Во сколько раз × (пусто = базовый)" min="1">
+    <button class="btn" id="adm-give-mut">Дать мутацию</button>
+  </div>
+  <div class="admin-card">
+    <h3>🍀 Удача для спиннера</h3>
+    <select id="adm-boost-tier" class="login-input"></select>
+    <div class="boost-mins" style="margin:6px 0 10px;">
+      <span>Длительность:</span>
+      <input type="number" id="adm-boost-min" value="3" min="1" max="60" class="login-input" style="width:90px;">
+      <span>мин</span>
+    </div>
+    <button class="btn" id="adm-give-boost">Включить удачу 🍀</button>
+    <div id="adm-boost-status" class="shop-note" style="margin-top:8px;"></div>
+  </div>
+  <div class="admin-card">
+    <h3>🏆 Победа над любым соперником</h3>
+    <div id="adm-opps"></div>
+  </div>
+  <div class="admin-card">
+    <h3>🔗 Туннель для друга</h3>
+    <div class="admin-row">
+      <button class="btn" id="tunnel-status-btn">Показать ссылку</button>
+      <button class="btn" id="tunnel-restart-btn">Перезапустить 🔄</button>
+    </div>
+    <div id="tunnel-result" class="shop-note" style="margin-top:8px;word-break:break-all;"></div>
+  </div>
+</div>
+
+<!-- ============ МАТЧ ============ -->
+<div id="screen-match" class="screen">
+  <h2 class="sc-title" id="match-title">Матч</h2>
+  <div class="match-board">
+    <div class="team-name" id="m-team-a">Моя команда</div>
+    <div class="match-score" id="match-score">0 : 0</div>
+    <div class="team-name" id="m-team-b">Бот</div>
+  </div>
+  <div class="match-minute" id="match-minute">0'</div>
+  <div class="match-poss" id="match-poss"></div>
+  <div class="match-visual">
+    <canvas id="match-canvas"></canvas>
+    <div id="goal-banner" class="goal-banner hidden"></div>
+  </div>
+  <div id="match-log"></div>
+  <div class="match-controls" id="match-controls">
+    <button class="btn" id="match-pause">⏸ Пауза</button>
+    <button class="btn" id="match-sub">🔄 Замена (<span id="subs-left">3</span>)</button>
+    <button class="btn" id="match-tactic">📋 Тактика</button>
+  </div>
+</div>
+
+<!-- ============ МОДАЛКА ============ -->
+<div id="match-modal" class="match-modal hidden"></div>
+
+<!-- ============ ИТОГ МАТЧА ============ -->
+<div id="match-end" class="overlay hidden">
+  <div class="end-card" id="end-card"></div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js?v=12"></script>
+<script src="js/data.js?v=12"></script>
+<script src="js/util.js?v=12"></script>
+<script src="js/auth.js?v=12"></script>
+<script src="js/state.js?v=12"></script>
+<script src="js/economy.js?v=12"></script>
+<script src="js/cards.js?v=12"></script>
+<script src="js/ui.js?v=12"></script>
+<script src="js/world.js?v=12"></script>
+<script src="js/roster.js?v=12"></script>
+<script src="js/screens.js?v=12"></script>
+<script src="js/market.js?v=12"></script>
+<script src="js/match.js?v=12"></script>
+<script src="js/decor.js?v=12"></script>
+<script src="js/net.js?v=12"></script>
+<script src="js/admin.js?v=12"></script>
+<script src="js/touch.js?v=12"></script>
+<script src="js/misc.js?v=12"></script>
+<script src="js/main.js?v=12"></script>
+</body>
+</html>

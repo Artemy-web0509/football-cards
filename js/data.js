@@ -1,0 +1,233 @@
+// ===================== ДАННЫЕ ИГРЫ =====================
+
+const SPIN_COST = 500;
+const START_COINS = 3000;
+
+const POS_LABEL = { GK: 'ВРТ', DF: 'ЗАЩ', MF: 'ПЗ', FW: 'НАП' };
+const POS_ORDER = ['GK', 'DF', 'MF', 'FW'];
+
+// 5 уровней редкости: шанс выпадения, диапазон рейтинга,
+// множитель цены продажи и множитель дохода в секунду
+const RARITIES = {
+  bronze:  { name: 'Бронза',  emoji: '🥉', chance: 0.58, rating: [62, 71],  sellMult: 1,   incomeMult: 1 },
+  silver:  { name: 'Серебро', emoji: '🥈', chance: 0.25, rating: [72, 79],  sellMult: 3,   incomeMult: 3 },
+  gold:    { name: 'Золото',  emoji: '🥇', chance: 0.12, rating: [80, 86],  sellMult: 8,   incomeMult: 8 },
+  diamond: { name: 'Алмаз',   emoji: '💎', chance: 0.04, rating: [87, 92],  sellMult: 25,  incomeMult: 25 },
+  secret:  { name: 'Секрет',  emoji: '👑', chance: 0.01, rating: [93, 110], sellMult: 80,  incomeMult: 80 },
+  bingi:   { name: 'Бинги',   emoji: '🌈', chance: 0.001, rating: [111, 111], sellMult: 6000, incomeMult: 1500, hidden: true },
+};
+const RARITY_KEYS = Object.keys(RARITIES);
+const SPIN_RARITY_KEYS = RARITY_KEYS.filter(k => !RARITIES[k].hidden);
+
+// Формации и их бонусы к атаке/защите/владению
+const FORMATIONS = {
+  '4-3-3':   { name: '4-3-3',   df: 4, mf: 3, fw: 3, att: 0.05, def: 0.00, poss: 0.00 },
+  '4-4-2':   { name: '4-4-2',   df: 4, mf: 4, fw: 2, att: 0.02, def: 0.02, poss: 0.01 },
+  '3-5-2':   { name: '3-5-2',   df: 3, mf: 5, fw: 2, att: 0.02, def: -0.02, poss: 0.03 },
+  '5-3-2':   { name: '5-3-2',   df: 5, mf: 3, fw: 2, att: -0.02, def: 0.05, poss: 0.00 },
+  '4-2-3-1': { name: '4-2-3-1', df: 4, mf: 5, fw: 1, att: 0.03, def: 0.00, poss: 0.02 },
+};
+
+// Улучшения (за МОНЕТЫ). Удача — на табло у спиннера,
+// Владение и Доход — на табло у футбольных полей. Дорогие — реально надо вкладываться
+const UPGRADES = [
+  { id: 'luck',       name: 'Удача',   icon: '🍀', bonus: 0.001, bonusDesc: '+0.1% шанс золота, +0.05% алмаза, +0.02% секрета', cost: 2000, costStep: 3, maxLevel: 40 },
+  { id: 'possession', name: 'Владение', icon: '⚽', bonus: 0.02, bonusDesc: '+2% владение в матчах', cost: 3000, costStep: 3, maxLevel: 40 },
+  { id: 'income',     name: 'Доход',    icon: '💰', bonus: 0.10, bonusDesc: '+10% дохода игроков',  cost: 3000, costStep: 3, maxLevel: 50 },
+];
+
+// Баффы в магазине (за ФАНАТОВ), постоянные и накапливаются
+const BUFFS = [
+  { id: 'all_income',      name: 'Доход всех',      desc: '+25% дохода всех игроков',            incMult: 0.25, cost: 250,  costStep: 1.7, maxLevel: 20, icon: '📈' },
+  { id: 'silver_income',   name: 'Доход серебра',   desc: '+50% дохода серебра',                 incMult: 0.50, cost: 400,  costStep: 1.7, maxLevel: 10, icon: '🥈' },
+  { id: 'gold_income',     name: 'Доход золота',    desc: '+100% дохода золота',                 incMult: 1.00, cost: 900,  costStep: 1.7, maxLevel: 10, icon: '🥇' },
+  { id: 'diamond_income',  name: 'Доход алмаза',    desc: '+150% дохода алмазов',                incMult: 1.50, cost: 2200, costStep: 1.7, maxLevel: 10, icon: '💎' },
+  { id: 'secret_income',   name: 'Доход секрета',   desc: '+200% дохода секретов',               incMult: 2.00, cost: 5500, costStep: 1.7, maxLevel: 10, icon: '👑' },
+  { id: 'gold_chance',     name: 'Шанс золота',     desc: '+1% шанс выпадения золота',           chanceBonus: { gold: 0.01 }, cost: 1500, costStep: 2.2, maxLevel: 5, icon: '🎯' },
+  { id: 'diamond_chance',  name: 'Шанс алмаза',     desc: '+0.5% шанс выпадения алмаза',         chanceBonus: { diamond: 0.005 }, cost: 4000, costStep: 2.2, maxLevel: 5, icon: '🎯' },
+  { id: 'secret_chance',   name: 'Шанс секрета',    desc: '+0.25% шанс выпадения секрета',       chanceBonus: { secret: 0.0025 }, cost: 9000, costStep: 2.2, maxLevel: 5, icon: '🎯' },
+];
+
+// Кубки в магазине (за ФАНАТОВ), постоянные множители дохода
+const CUPS = [
+  { id: 'novice',     name: 'Кубок новичка',     cost: 400,  incMult: 0.10 },
+  { id: 'bronze_cup', name: 'Бронзовый кубок',   cost: 1200, incMult: 0.15 },
+  { id: 'silver_cup', name: 'Серебряный кубок',  cost: 3200, incMult: 0.20 },
+  { id: 'gold_cup',   name: 'Золотой кубок',     cost: 8000, incMult: 0.25 },
+  { id: 'champ_cup',  name: 'Кубок чемпиона',    cost: 20000, incMult: 0.30 },
+];
+
+// Мутации карточек (каждый час случайная карточка получает случайную мутацию).
+// Множитель умножает доход карточки. Админ может выдать любую мутацию с любым множителем.
+const MUTATIONS = [
+  { id: 'shiny',   name: 'Сияние',       icon: '✨', base: 1.5  },
+  { id: 'cursed',  name: 'Проклятие',    icon: '💀', base: 2.5  },
+  { id: 'venom',   name: 'Ядовитая',     icon: '🐍', base: 3    },
+  { id: 'rainbow', name: 'Радуга',       icon: '🌈', base: 6    },
+  { id: 'divine',  name: 'Божественная', icon: '👼', base: 12   },
+];
+
+// Временная удача для спиннера (панель 🍀): включается на N минут, улучшает шансы
+const LUCK_BOOSTS = [
+  { id: 'normal', name: 'Удача',        icon: '🍀', desc: '+2% золото, +1% алмаз, +0.5% секрет', gold: 0.02, diamond: 0.01, secret: 0.005, costPerMin: 150  },
+  { id: 'big',    name: 'Большая удача', icon: '✨', desc: '+5% золото, +2.5% алмаз, +1% секрет',  gold: 0.05, diamond: 0.025, secret: 0.01,  costPerMin: 600  },
+  { id: 'mega',   name: 'Мега удача',    icon: '⭐', desc: '+10% золото, +5% алмаз, +2% секрет',   gold: 0.10, diamond: 0.05,  secret: 0.02,  costPerMin: 2000 },
+];
+
+// Интервал мутаций: раз в час
+const MUTATION_INTERVAL = 3600 * 1000;
+
+// Соперники (боты) на стадионе. Награда — ФАНАТЫ
+const OPPONENTS = [
+  { id: 'weak',    name: 'Аутсайдеры',  emoji: '🐌', avg: 66, fansWin: 60,  fansDraw: 25 },
+  { id: 'medium',  name: 'Середняки',   emoji: '⚙️', avg: 73, fansWin: 160, fansDraw: 70 },
+  { id: 'strong',  name: 'Гранды',      emoji: '💪', avg: 79, fansWin: 340, fansDraw: 150 },
+  { id: 'legend',  name: 'Легенды',     emoji: '👑', avg: 86, fansWin: 750, fansDraw: 320 },
+];
+
+// 8 полей со спиннерами + арена в центре + зона магазинов.
+// Поля расставлены так, чтобы прямоугольники не пересекались друг с другом
+const BASE_COLORS = ['#3f8efc', '#ff5d5d', '#39c98a', '#ff9f1c', '#a35bff', '#ff4fc3', '#17c0e0', '#c8d630'];
+const BASES = [
+  { name: 'Поле «Север»',  color: BASE_COLORS[0], x: 30,  z: 24 },
+  { name: 'Поле «Восток»', color: BASE_COLORS[1], x: 75,  z: 24 },
+  { name: 'Поле «Юг»',     color: BASE_COLORS[2], x: 120, z: 24 },
+  { name: 'Поле «Запад»',  color: BASE_COLORS[3], x: 30,  z: 76 },
+  { name: 'Поле «Олимп»',  color: BASE_COLORS[4], x: 120, z: 76 },
+  { name: 'Поле «Комета»', color: BASE_COLORS[5], x: 30,  z: 120 },
+  { name: 'Поле «Вулкан»', color: BASE_COLORS[6], x: 120, z: 120 },
+  { name: 'Поле «Гроза»',  color: BASE_COLORS[7], x: 75,  z: 120 },
+];
+const ARENA = { name: '⚔ Мультиплеер-арена', x: 75, z: 75, size: 20 };
+const MARKET = { name: 'Магазины', color: '#ffd23d', x: 75, z: 170 };
+
+const WORLD_SIZE = 180;
+const PLAYER_SPAWN = { x: 34, z: 170, yaw: 2.8, facing: 2.8 };
+
+// УНИКАЛЬНЫЕ РЕАЛЬНЫЕ ФУТБОЛИСТЫ: каждый игрок существует в игре в одном экземпляре.
+// Редкость определяется рейтингом (см. rarityForRating).
+const REAL_PLAYERS = [
+  // 🇧🇷 Бразилия
+  { name: 'Алиссон', flag: '🇧🇷', pos: 'GK', rating: 88 }, { name: 'Эдерсон', flag: '🇧🇷', pos: 'GK', rating: 88 },
+  { name: 'Маркиньос', flag: '🇧🇷', pos: 'DF', rating: 87 }, { name: 'Милитао', flag: '🇧🇷', pos: 'DF', rating: 85 },
+  { name: 'Касемиро', flag: '🇧🇷', pos: 'MF', rating: 87 }, { name: 'Фабиньо', flag: '🇧🇷', pos: 'MF', rating: 84 },
+  { name: 'Бруно Гимарайнс', flag: '🇧🇷', pos: 'MF', rating: 84 }, { name: 'Пакинета', flag: '🇧🇷', pos: 'MF', rating: 83 },
+  { name: 'Винисиус', flag: '🇧🇷', pos: 'FW', rating: 88 }, { name: 'Неймар', flag: '🇧🇷', pos: 'FW', rating: 95 },
+  { name: 'Рафинья', flag: '🇧🇷', pos: 'FW', rating: 85 }, { name: 'Родриго', flag: '🇧🇷', pos: 'FW', rating: 84 },
+  { name: 'Ришарлисон', flag: '🇧🇷', pos: 'FW', rating: 82 }, { name: 'Мартинелли', flag: '🇧🇷', pos: 'FW', rating: 83 },
+  { name: 'Габриэл Магальяэс', flag: '🇧🇷', pos: 'DF', rating: 83 }, { name: 'Данило', flag: '🇧🇷', pos: 'DF', rating: 82 },
+  // 🇦🇷 Аргентина
+  { name: 'Эмилиано Мартинес', flag: '🇦🇷', pos: 'GK', rating: 86 }, { name: 'Кристиан Ромеро', flag: '🇦🇷', pos: 'DF', rating: 85 },
+  { name: 'Лисандро Мартинес', flag: '🇦🇷', pos: 'DF', rating: 85 }, { name: 'Оттаменди', flag: '🇦🇷', pos: 'DF', rating: 84 },
+  { name: 'Энцо Фернандес', flag: '🇦🇷', pos: 'MF', rating: 85 }, { name: 'Де Пауль', flag: '🇦🇷', pos: 'MF', rating: 83 },
+  { name: 'Мак Аллистер', flag: '🇦🇷', pos: 'MF', rating: 84 }, { name: 'Лаутаро Мартинес', flag: '🇦🇷', pos: 'FW', rating: 87 },
+  { name: 'Месси', flag: '🇦🇷', pos: 'FW', rating: 98 }, { name: 'Хулиан Альварес', flag: '🇦🇷', pos: 'FW', rating: 87 },
+  { name: 'Ди Мария', flag: '🇦🇷', pos: 'FW', rating: 84 }, { name: 'Анджело Ди Мария', flag: '🇦🇷', pos: 'MF', rating: 82 },
+  // 🇫🇷 Франция
+  { name: 'Меньян', flag: '🇫🇷', pos: 'GK', rating: 85 }, { name: 'Салиба', flag: '🇫🇷', pos: 'DF', rating: 86 },
+  { name: 'Конате', flag: '🇫🇷', pos: 'DF', rating: 84 }, { name: 'Упамекано', flag: '🇫🇷', pos: 'DF', rating: 84 },
+  { name: 'Чуамени', flag: '🇫🇷', pos: 'MF', rating: 84 }, { name: 'Канте', flag: '🇫🇷', pos: 'MF', rating: 84 },
+  { name: 'Гризманн', flag: '🇫🇷', pos: 'MF', rating: 87 }, { name: 'Рабьо', flag: '🇫🇷', pos: 'MF', rating: 83 },
+  { name: 'Мбаппе', flag: '🇫🇷', pos: 'FW', rating: 91 }, { name: 'Дембеле', flag: '🇫🇷', pos: 'FW', rating: 84 },
+  { name: 'Жиру', flag: '🇫🇷', pos: 'FW', rating: 82 }, { name: 'Гендузи', flag: '🇫🇷', pos: 'MF', rating: 82 },
+  // 🇵🇹 Португалия
+  { name: 'Диогу Кошта', flag: '🇵🇹', pos: 'GK', rating: 85 }, { name: 'Рубен Диас', flag: '🇵🇹', pos: 'DF', rating: 87 },
+  { name: 'Канселу', flag: '🇵🇹', pos: 'DF', rating: 85 }, { name: 'Пепе', flag: '🇵🇹', pos: 'DF', rating: 80 },
+  { name: 'Бруну Фернандеш', flag: '🇵🇹', pos: 'MF', rating: 88 }, { name: 'Бернарду Силва', flag: '🇵🇹', pos: 'MF', rating: 87 },
+  { name: 'Витинья', flag: '🇵🇹', pos: 'MF', rating: 84 }, { name: 'Пальинья', flag: '🇵🇹', pos: 'MF', rating: 84 },
+  { name: 'Роналду', flag: '🇵🇹', pos: 'FW', rating: 99 }, { name: 'Леао', flag: '🇵🇹', pos: 'FW', rating: 86 },
+  { name: 'Жота', flag: '🇵🇹', pos: 'FW', rating: 85 }, { name: 'Гонсалу Рамос', flag: '🇵🇹', pos: 'FW', rating: 83 },
+  // 🇪🇸 Испания
+  { name: 'Унаи Симон', flag: '🇪🇸', pos: 'GK', rating: 85 }, { name: 'Карвахаль', flag: '🇪🇸', pos: 'DF', rating: 86 },
+  { name: 'Ляпорт', flag: '🇪🇸', pos: 'DF', rating: 85 }, { name: 'Начо', flag: '🇪🇸', pos: 'DF', rating: 83 },
+  { name: 'Родри', flag: '🇪🇸', pos: 'MF', rating: 88 }, { name: 'Педри', flag: '🇪🇸', pos: 'MF', rating: 87 },
+  { name: 'Гави', flag: '🇪🇸', pos: 'MF', rating: 85 }, { name: 'Фабиан Руис', flag: '🇪🇸', pos: 'MF', rating: 84 },
+  { name: 'Ямаль', flag: '🇪🇸', pos: 'FW', rating: 86 }, { name: 'Мората', flag: '🇪🇸', pos: 'FW', rating: 83 },
+  { name: 'Нико Уильямс', flag: '🇪🇸', pos: 'FW', rating: 84 }, { name: 'Ольмо', flag: '🇪🇸', pos: 'MF', rating: 84 },
+  // 🇩🇪 Германия
+  { name: 'Тер Стеген', flag: '🇩🇪', pos: 'GK', rating: 88 }, { name: 'Рюдигер', flag: '🇩🇪', pos: 'DF', rating: 85 },
+  { name: 'Тах', flag: '🇩🇪', pos: 'DF', rating: 84 }, { name: 'Шлоттербек', flag: '🇩🇪', pos: 'DF', rating: 83 },
+  { name: 'Киммих', flag: '🇩🇪', pos: 'MF', rating: 86 }, { name: 'Горетцка', flag: '🇩🇪', pos: 'MF', rating: 84 },
+  { name: 'Муссиала', flag: '🇩🇪', pos: 'MF', rating: 87 }, { name: 'Вирц', flag: '🇩🇪', pos: 'MF', rating: 88 },
+  { name: 'Хавертц', flag: '🇩🇪', pos: 'FW', rating: 83 }, { name: 'Сане', flag: '🇩🇪', pos: 'FW', rating: 84 },
+  { name: 'Гнабри', flag: '🇩🇪', pos: 'FW', rating: 82 }, { name: 'Мюллер', flag: '🇩🇪', pos: 'FW', rating: 82 },
+  // 🏴 Англия
+  { name: 'Пикфорд', flag: '🏴', pos: 'GK', rating: 83 }, { name: 'Уокер', flag: '🏴', pos: 'DF', rating: 84 },
+  { name: 'Стоунз', flag: '🏴', pos: 'DF', rating: 85 }, { name: 'Магуайр', flag: '🏴', pos: 'DF', rating: 79 },
+  { name: 'Райс', flag: '🏴', pos: 'MF', rating: 87 }, { name: 'Беллингем', flag: '🏴', pos: 'MF', rating: 89 },
+  { name: 'Фоден', flag: '🏴', pos: 'MF', rating: 87 }, { name: 'Палмер', flag: '🏴', pos: 'MF', rating: 86 },
+  { name: 'Сака', flag: '🏴', pos: 'FW', rating: 88 }, { name: 'Кейн', flag: '🏴', pos: 'FW', rating: 89 },
+  { name: 'Рашфорд', flag: '🏴', pos: 'FW', rating: 83 }, { name: 'Гордон', flag: '🏴', pos: 'FW', rating: 80 },
+  // 🇮🇹 Италия
+  { name: 'Доннарумма', flag: '🇮🇹', pos: 'GK', rating: 89 }, { name: 'Бастони', flag: '🇮🇹', pos: 'DF', rating: 85 },
+  { name: 'Димарко', flag: '🇮🇹', pos: 'DF', rating: 84 }, { name: 'Акерби', flag: '🇮🇹', pos: 'DF', rating: 82 },
+  { name: 'Барелла', flag: '🇮🇹', pos: 'MF', rating: 86 }, { name: 'Верратти', flag: '🇮🇹', pos: 'MF', rating: 84 },
+  { name: 'Тонали', flag: '🇮🇹', pos: 'MF', rating: 83 }, { name: 'Жоржиньо', flag: '🇮🇹', pos: 'MF', rating: 82 },
+  { name: 'Кьеза', flag: '🇮🇹', pos: 'FW', rating: 84 }, { name: 'Распадори', flag: '🇮🇹', pos: 'FW', rating: 80 },
+  { name: 'Ретеги', flag: '🇮🇹', pos: 'FW', rating: 81 },
+  // 🇳🇱 Нидерланды
+  { name: 'Вербрюгген', flag: '🇳🇱', pos: 'GK', rating: 83 }, { name: 'Ван Дейк', flag: '🇳🇱', pos: 'DF', rating: 89 },
+  { name: 'Аке', flag: '🇳🇱', pos: 'DF', rating: 84 }, { name: 'Де Лихт', flag: '🇳🇱', pos: 'DF', rating: 84 },
+  { name: 'Френки де Йонг', flag: '🇳🇱', pos: 'MF', rating: 86 }, { name: 'Реиндерс', flag: '🇳🇱', pos: 'MF', rating: 84 },
+  { name: 'Симонс', flag: '🇳🇱', pos: 'MF', rating: 84 }, { name: 'Гакпо', flag: '🇳🇱', pos: 'FW', rating: 85 },
+  { name: 'Депай', flag: '🇳🇱', pos: 'FW', rating: 82 }, { name: 'Мален', flag: '🇳🇱', pos: 'FW', rating: 81 },
+  // 🇭🇷 Хорватия
+  { name: 'Ливакович', flag: '🇭🇷', pos: 'GK', rating: 83 }, { name: 'Гвардиол', flag: '🇭🇷', pos: 'DF', rating: 86 },
+  { name: 'Суттало', flag: '🇭🇷', pos: 'DF', rating: 82 }, { name: 'Модрич', flag: '🇭🇷', pos: 'MF', rating: 86 },
+  { name: 'Ковачич', flag: '🇭🇷', pos: 'MF', rating: 83 }, { name: 'Брозович', flag: '🇭🇷', pos: 'MF', rating: 84 },
+  { name: 'Майер', flag: '🇭🇷', pos: 'MF', rating: 81 }, { name: 'Крамарич', flag: '🇭🇷', pos: 'FW', rating: 82 },
+  { name: 'Петкович', flag: '🇭🇷', pos: 'FW', rating: 80 }, { name: 'Перишич', flag: '🇭🇷', pos: 'MF', rating: 81 },
+  // 🇧🇪 Бельгия
+  { name: 'Куртуа', flag: '🇧🇪', pos: 'GK', rating: 90 }, { name: 'Фас', flag: '🇧🇪', pos: 'DF', rating: 81 },
+  { name: 'Кастань', flag: '🇧🇪', pos: 'DF', rating: 82 }, { name: 'Де Брюйне', flag: '🇧🇪', pos: 'MF', rating: 89 },
+  { name: 'Тилеманс', flag: '🇧🇪', pos: 'MF', rating: 82 }, { name: 'Онана', flag: '🇧🇪', pos: 'MF', rating: 81 },
+  { name: 'Доку', flag: '🇧🇪', pos: 'FW', rating: 84 }, { name: 'Тросар', flag: '🇧🇪', pos: 'FW', rating: 83 },
+  { name: 'Лукаку', flag: '🇧🇪', pos: 'FW', rating: 82 }, { name: 'Опенда', flag: '🇧🇪', pos: 'FW', rating: 81 },
+  // 🇵🇱 Польша
+  { name: 'Щенсный', flag: '🇵🇱', pos: 'GK', rating: 82 }, { name: 'Кивёр', flag: '🇵🇱', pos: 'DF', rating: 80 },
+  { name: 'Беднарек', flag: '🇵🇱', pos: 'DF', rating: 78 }, { name: 'Левандовски', flag: '🇵🇱', pos: 'FW', rating: 88 },
+  { name: 'Зелиньски', flag: '🇵🇱', pos: 'MF', rating: 84 }, { name: 'Свидерский', flag: '🇵🇱', pos: 'FW', rating: 79 },
+  // 🇳🇴 Норвегия
+  { name: 'Эдегор', flag: '🇳🇴', pos: 'MF', rating: 87 }, { name: 'Хааланд', flag: '🇳🇴', pos: 'FW', rating: 91 },
+  { name: 'Сёрлот', flag: '🇳🇴', pos: 'FW', rating: 81 }, { name: 'Нюланд', flag: '🇳🇴', pos: 'GK', rating: 78 },
+  // 🇲🇦 Марокко
+  { name: 'Буну', flag: '🇲🇦', pos: 'GK', rating: 83 }, { name: 'Хакими', flag: '🇲🇦', pos: 'DF', rating: 87 },
+  { name: 'Агерд', flag: '🇲🇦', pos: 'DF', rating: 82 }, { name: 'Зиеш', flag: '🇲🇦', pos: 'MF', rating: 82 },
+  { name: 'Амрабат', flag: '🇲🇦', pos: 'MF', rating: 82 }, { name: 'Эн-Несири', flag: '🇲🇦', pos: 'FW', rating: 80 },
+  // 🇯🇵 Япония
+  { name: 'Томиясу', flag: '🇯🇵', pos: 'DF', rating: 80 }, { name: 'Итакура', flag: '🇯🇵', pos: 'DF', rating: 79 },
+  { name: 'Эндо', flag: '🇯🇵', pos: 'MF', rating: 79 }, { name: 'Кубо', flag: '🇯🇵', pos: 'FW', rating: 80 },
+  { name: 'Митома', flag: '🇯🇵', pos: 'FW', rating: 82 }, { name: 'Камада', flag: '🇯🇵', pos: 'MF', rating: 78 },
+  // 🇰🇷 Корея
+  { name: 'Сон Хынмин', flag: '🇰🇷', pos: 'FW', rating: 88 }, { name: 'Ким Минджэ', flag: '🇰🇷', pos: 'DF', rating: 84 },
+  { name: 'Ли Кан Ин', flag: '🇰🇷', pos: 'MF', rating: 81 }, { name: 'Хван Хичан', flag: '🇰🇷', pos: 'FW', rating: 78 },
+  // 🇷🇺 Россия (низкие рейтинги для бронзы)
+  { name: 'Сафонов', flag: '🇷🇺', pos: 'GK', rating: 79 }, { name: 'Максименко', flag: '🇷🇺', pos: 'GK', rating: 75 },
+  { name: 'Дивеев', flag: '🇷🇺', pos: 'DF', rating: 78 }, { name: 'Кудряшов', flag: '🇷🇺', pos: 'DF', rating: 76 },
+  { name: 'Головин', flag: '🇷🇺', pos: 'MF', rating: 79 }, { name: 'Обляков', flag: '🇷🇺', pos: 'MF', rating: 77 },
+  { name: 'Сперцян', flag: '🇷🇺', pos: 'MF', rating: 77 }, { name: 'Миранчук', flag: '🇷🇺', pos: 'MF', rating: 76 },
+  { name: 'Тюкавин', flag: '🇷🇺', pos: 'FW', rating: 79 }, { name: 'Пиняев', flag: '🇷🇺', pos: 'FW', rating: 78 },
+  { name: 'Сергеев', flag: '🇷🇺', pos: 'FW', rating: 76 }, { name: 'Агаларов', flag: '🇷🇺', pos: 'FW', rating: 75 },
+  // 🇺🇦 Украина
+  { name: 'Лунин', flag: '🇺🇦', pos: 'GK', rating: 81 }, { name: 'Матвиенко', flag: '🇺🇦', pos: 'DF', rating: 79 },
+  { name: 'Забарный', flag: '🇺🇦', pos: 'DF', rating: 78 }, { name: 'Зинченко', flag: '🇺🇦', pos: 'DF', rating: 79 },
+  { name: 'Судаков', flag: '🇺🇦', pos: 'MF', rating: 78 }, { name: 'Шапаренко', flag: '🇺🇦', pos: 'MF', rating: 76 },
+  { name: 'Довбик', flag: '🇺🇦', pos: 'FW', rating: 80 }, { name: 'Цыганков', flag: '🇺🇦', pos: 'FW', rating: 79 },
+  { name: 'Мудрик', flag: '🇺🇦', pos: 'FW', rating: 79 }, { name: 'Ярмоленко', flag: '🇺🇦', pos: 'MF', rating: 75 },
+  // Молодые и низкорейтинговые (бронза-серебро) — чтобы в пуле всегда были простые игроки
+  { name: 'Эван Фергюсон', flag: '🇮🇪', pos: 'FW', rating: 74 }, { name: 'Байандер', flag: '🇩🇰', pos: 'DF', rating: 73 },
+  { name: 'Доньи', flag: '🇨🇮', pos: 'DF', rating: 72 }, { name: 'Кайнер', flag: '🇦🇹', pos: 'MF', rating: 73 },
+  { name: 'Осамен', flag: '🇳🇬', pos: 'FW', rating: 77 }, { name: 'Ихэаначо', flag: '🇳🇬', pos: 'FW', rating: 76 },
+  { name: 'Кудус', flag: '🇬🇭', pos: 'MF', rating: 80 }, { name: 'Атар', flag: '🇸🇳', pos: 'MF', rating: 78 },
+  { name: 'Манде', flag: '🇸🇳', pos: 'GK', rating: 72 }, { name: 'Диаките', flag: '🇸🇳', pos: 'DF', rating: 71 },
+  { name: 'Медведев', flag: '🇷🇺', pos: 'GK', rating: 70 }, { name: 'Глебов', flag: '🇷🇺', pos: 'MF', rating: 70 },
+  { name: 'Кисляк', flag: '🇷🇺', pos: 'DF', rating: 69 }, { name: 'Русаков', flag: '🇷🇺', pos: 'FW', rating: 69 },
+  { name: 'Осипенко', flag: '🇷🇺', pos: 'DF', rating: 68 }, { name: 'Шапи', flag: '🇷🇺', pos: 'FW', rating: 68 },
+  { name: 'Белов', flag: '🇷🇺', pos: 'MF', rating: 67 }, { name: 'Козлов', flag: '🇷🇺', pos: 'DF', rating: 66 },
+  { name: 'Тихонов', flag: '🇷🇺', pos: 'FW', rating: 66 }, { name: 'Соколов', flag: '🇷🇺', pos: 'MF', rating: 65 },
+  { name: 'Гаврилов', flag: '🇷🇺', pos: 'GK', rating: 64 }, { name: 'Лебедев', flag: '🇷🇺', pos: 'DF', rating: 64 },
+  { name: 'Романов', flag: '🇷🇺', pos: 'FW', rating: 63 }, { name: 'Щербаков', flag: '🇷🇺', pos: 'MF', rating: 63 },
+  { name: 'Орлов', flag: '🇷🇺', pos: 'DF', rating: 62 }, { name: 'Коваленко', flag: '🇺🇦', pos: 'FW', rating: 72 },
+];
+
+const NATIONS = {};

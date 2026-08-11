@@ -17,6 +17,8 @@ function bindGlobal() {
   };
   $('#logout-btn').onclick = logout;
   $('#backpack-btn').onclick = openBackpack;
+  $('#marketplace-btn').onclick = () => showScreen('marketplace');
+  $('#index-btn').onclick = () => showScreen('index');
   $('#admin-btn').onclick = () => showScreen('admin');
   $('#adm-give-coins').onclick = () => adminGiveCoins(Math.max(0, Math.floor(+$('#adm-amount').value || 0)));
   $('#adm-give-fans').onclick = () => adminGiveFans(Math.max(0, Math.floor(+$('#adm-amount').value || 0)));

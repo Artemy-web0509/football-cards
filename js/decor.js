@@ -36,7 +36,7 @@ function drawGroundBase(cam, polys) {
 // Стены по периметру мира
 function wallPolys(cam) {
   const polys = [];
-  const W = WORLD_SIZE, h = 4, t = 1.4;
+  const W = WORLD_SIZE, h = 9, t = 1.4;
   const c = '#eef4e8';
   polys.push(...boxPolys({ x: W / 2, z: 0, w: W, d: t, h, color: c }, cam));
   polys.push(...boxPolys({ x: W / 2, z: W, w: W, d: t, h, color: c }, cam));
@@ -44,7 +44,7 @@ function wallPolys(cam) {
   polys.push(...boxPolys({ x: W, z: W / 2, w: t, d: W, h, color: c }, cam));
   const pc = '#ffffff';
   for (const [cx, cz] of [[0, 0], [W, 0], [0, W], [W, W]]) {
-    polys.push(...boxPolys({ x: cx, z: cz, w: 2.2, d: 2.2, h: 5.2, color: pc }, cam));
+    polys.push(...boxPolys({ x: cx, z: cz, w: 2.2, d: 2.2, h: 10.4, color: pc }, cam));
   }
   return polys;
 }
@@ -54,15 +54,8 @@ function fieldPolys(base, cam, isHome) {
   const polys = [];
   const track = groundPoly(cam, f.x0 - 5, f.z0 - 4.5, f.x1 + 5, f.z1 + 4.5, 0.01, '#7cc350');
   if (track) polys.push(track);
-  const trackIn = groundPoly(cam, f.x0 - 3.5, f.z0 - 3, f.x1 + 3.5, f.z1 + 3, 0.012, '#66b841');
-  if (trackIn) polys.push(trackIn);
-  const stripes = 8;
-  for (let i = 0; i < stripes; i++) {
-    const a = f.x0 + (f.x1 - f.x0) * i / stripes;
-    const b = f.x0 + (f.x1 - f.x0) * (i + 1) / stripes;
-    const g = groundPoly(cam, a, f.z0, b, f.z1, 0.02, i % 2 ? '#36b04f' : '#42bd59');
-    if (g) polys.push(g);
-  }
+  const field = groundPoly(cam, f.x0 - 3.5, f.z0 - 3, f.x1 + 3.5, f.z1 + 3, 0.012, isHome ? '#3fbf5a' : '#36b04f');
+  if (field) polys.push(field);
   const borderCol = isHome ? '#ffd23d' : '#ffffff';
   const line = (a, b, c, d, col) => { const g = groundPoly(cam, a, b, c, d, 0.03, col); if (g) polys.push(g); };
   line(f.x0 - 0.4, f.z0 - 0.4, f.x1 + 0.4, f.z0 + 0.4, borderCol);

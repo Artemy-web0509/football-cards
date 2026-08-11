@@ -11,8 +11,7 @@ function renderMarketTab(tab) {
   $('#shop-' + tab).classList.add('active');
   if (tab === 'sell') renderSellShop();
   else if (tab === 'buffs') renderBuffsShop();
-  else if (tab === 'cups') renderCupsShop();
-  else renderMarketBoard();
+  else renderCupsShop();
 }
 
 function renderSellShop() {
@@ -52,6 +51,11 @@ async function buyCardClick(key) {
   const res = await buyCardOnMarket(key);
   if (res.ok) renderMarketBoard();
   else toast('❌ ' + res.msg);
+}
+
+async function renderMarketplace() {
+  $('#shop-market').classList.add('active');
+  renderMarketBoard();
 }
 
 async function renderMarketBoard() {
@@ -136,5 +140,35 @@ function buyCup(id) {
   state.cups.push(id);
   save(); renderTop(); renderCupsShop();
   toast('🏆 ' + c.name + ' куплен! Доход вырос');
+}
+
+// ============ ИНДЕКС ВСЕХ ИГРОКОВ ============
+let indexFilter = 'all';
+function renderPlayerIndex() {
+  const FILTERS = [
+    ['all', 'Все'], ['GK', 'Вратари'], ['DF', 'Защитники'], ['MF', 'Полузащитники'], ['FW', 'Нападающие'],
+    ['owned', 'Мои'], ['missing', 'Свободные'],
+  ];
+  $('#index-filters').innerHTML = FILTERS.map(([k, t]) =>
+    `<button class="tab-btn ${indexFilter === k ? 'active' : ''}" data-idxf="${k}">${t}</button>`).join('');
+  $$('#index-filters [data-idxf]').forEach(b => b.onclick = () => { indexFilter = b.dataset.idxf; renderPlayerIndex(); });
+
+  const mine = new Set(state.players.filter(p => p.key && !p.shadow).map(p => p.key));
+  const claimed = new Set(Object.keys(REGISTRY).filter(k => REGISTRY[k].owner));
+  let list = REAL_PLAYERS.map(r => ({ ...r, owned: mine.has(r.name), claimed: claimed.has(r.name) }));
+  if (indexFilter === 'GK' || indexFilter === 'DF' || indexFilter === 'MF' || indexFilter === 'FW') list = list.filter(x => x.pos === indexFilter);
+  else if (indexFilter === 'owned') list = list.filter(x => x.owned);
+  else if (indexFilter === 'missing') list = list.filter(x => !x.owned);
+  list.sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name));
+
+  if (!list.length) { $('#player-index').innerHTML = '<div class="shop-note">Никого не найдено.</div>'; return; }
+  const counts = { all: REAL_PLAYERS.length, owned: list.length };
+  $('#player-index').innerHTML =
+    `<div class="shop-note">Всего в базе: ${REAL_PLAYERS.length} игроков. У тебя: ${mine.size}. Свободно: ${REAL_PLAYERS.length - claimed.size}.</div>` +
+    list.map(r => `
+      <div class="item-row idx-row">
+        <div class="item-name">${RARITIES[rarityForRating(r.rating)].emoji} ${r.rating} • ${r.flag} ${r.name} <span class="item-meta">${POS_LABEL[r.pos]}</span></div>
+        <div class="item-meta">${r.owned ? '<span style="color:var(--accent);font-weight:800;">У тебя ✅</span>' : (r.claimed ? 'Занята' : 'Свободна 🆓')}</div>
+      </div>`).join('');
 }
 

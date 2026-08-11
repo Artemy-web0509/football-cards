@@ -8,7 +8,7 @@
 // Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
 (function () {
   try {
-    var V = 'v13';
+    var V = 'v14';
     var prev = localStorage.getItem('fc_ver');
     if (prev !== V) {
       localStorage.removeItem('fc_registry');
@@ -24,7 +24,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
@@ -35,6 +35,8 @@
   <div class="tb-item" id="fans-display">👥 0</div>
   <div class="tb-item user" id="user-display">👤 </div>
   <div class="tb-item hidden" id="net-display" title="Статус сервера">🖥</div>
+  <button class="tb-logout" id="marketplace-btn" title="Рынок игроков">🏪</button>
+  <button class="tb-logout" id="index-btn" title="Индекс всех игроков">📋</button>
   <button class="tb-logout" id="backpack-btn" title="Рюкзак (клавиша B)">🎒</button>
   <button class="tb-logout hidden" id="admin-btn" title="Админ-панель">🛠</button>
   <button class="tb-logout" id="logout-btn" title="Выйти">⏻</button>
@@ -168,14 +170,28 @@
   <h2 class="sc-title">🏪 Магазины</h2>
   <div class="tabs">
     <button class="tab-btn active" data-scr="market" data-tab="sell">Продать карточки</button>
-    <button class="tab-btn" data-scr="market" data-tab="market">🏪 Рынок игроков</button>
     <button class="tab-btn" data-scr="market" data-tab="buffs">Баффы</button>
     <button class="tab-btn" data-scr="market" data-tab="cups">Кубки</button>
   </div>
   <div id="shop-sell" class="tab-page active"></div>
-  <div id="shop-market" class="tab-page"></div>
   <div id="shop-buffs" class="tab-page"></div>
   <div id="shop-cups" class="tab-page"></div>
+</div>
+
+<!-- ============ РЫНОК ИГРОКОВ (отдельный) ============ -->
+<div id="screen-marketplace" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🏪 Рынок игроков</h2>
+  <div id="shop-market" class="tab-page active"></div>
+</div>
+
+<!-- ============ ИНДЕКС ВСЕХ ИГРОКОВ ============ -->
+<div id="screen-index" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">📋 Индекс игроков</h2>
+  <div class="shop-note">Все реальные футболисты игры. Каждый существует в одном экземпляре на весь мир.</div>
+  <div id="index-filters" class="tabs"></div>
+  <div id="player-index"></div>
 </div>
 
 <!-- ============ АДМИН-ПАНЕЛЬ ============ -->
@@ -278,24 +294,24 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=13"></script>
-<script src="js/data.js?v=13"></script>
-<script src="js/util.js?v=13"></script>
-<script src="js/auth.js?v=13"></script>
-<script src="js/state.js?v=13"></script>
-<script src="js/economy.js?v=13"></script>
-<script src="js/cards.js?v=13"></script>
-<script src="js/ui.js?v=13"></script>
-<script src="js/world.js?v=13"></script>
-<script src="js/roster.js?v=13"></script>
-<script src="js/screens.js?v=13"></script>
-<script src="js/market.js?v=13"></script>
-<script src="js/match.js?v=13"></script>
-<script src="js/decor.js?v=13"></script>
-<script src="js/net.js?v=13"></script>
-<script src="js/admin.js?v=13"></script>
-<script src="js/touch.js?v=13"></script>
-<script src="js/misc.js?v=13"></script>
-<script src="js/main.js?v=13"></script>
+<script src="js/supabase.js?v=14"></script>
+<script src="js/data.js?v=14"></script>
+<script src="js/util.js?v=14"></script>
+<script src="js/auth.js?v=14"></script>
+<script src="js/state.js?v=14"></script>
+<script src="js/economy.js?v=14"></script>
+<script src="js/cards.js?v=14"></script>
+<script src="js/ui.js?v=14"></script>
+<script src="js/world.js?v=14"></script>
+<script src="js/roster.js?v=14"></script>
+<script src="js/screens.js?v=14"></script>
+<script src="js/market.js?v=14"></script>
+<script src="js/match.js?v=14"></script>
+<script src="js/decor.js?v=14"></script>
+<script src="js/net.js?v=14"></script>
+<script src="js/admin.js?v=14"></script>
+<script src="js/touch.js?v=14"></script>
+<script src="js/misc.js?v=14"></script>
+<script src="js/main.js?v=14"></script>
 </body>
 </html>

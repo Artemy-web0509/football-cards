@@ -194,14 +194,6 @@ function pondRound(cam) {
   drawDisc(cam, POND.x, 0.02, POND.z, R + 1.8, '#dcc58f');
   drawDisc(cam, POND.x, 0.04, POND.z, R + 0.6, '#c9ae72');
   drawDisc(cam, POND.x, 0.06, POND.z, R, '#2f7fd0');
-  const t = Date.now() / 950;
-  for (let i = 0; i < 5; i++) {
-    const off = (t + i * 0.2) % 1;
-    const a = off * Math.PI * 2;
-    const px = POND.x + Math.cos(a) * (R - 3.2);
-    const pz = POND.z + Math.sin(a) * (R - 3.2);
-    drawDisc(cam, px, 0.08, pz, 1.4, 'rgba(170,225,255,0.55)');
-  }
   drawDisc(cam, POND.x, 0.08, POND.z, R * 0.7, 'rgba(255,255,255,0.08)');
 }
 
@@ -352,7 +344,7 @@ function drawClouds(cam) {
     let px = baseX - off;
     if (px < -200) px += span;
     if (px > W + 200) px -= span;
-    const py = c.ny * H + Math.sin(Date.now() / 4000 + c.nx * 9) * 4;
+    const py = c.ny * H;
     const rs = c.s * 34;
     wc.fillStyle = 'rgba(255,255,255,0.72)';
     for (let k = 0; k < 3; k++) {
@@ -564,9 +556,8 @@ function drawHeldSlotMarkers(cam) {
     const z = f.z1 - r.z * FIELD_D;
     const isTarget = target && ((target.id == null && r.id == null && r.pos === target.pos) || (target.id != null && r.id === target.id));
     const col = isTarget ? '#ffd23d' : 'rgba(255,255,255,0.55)';
-    const pulse = isTarget ? 1 + 0.25 * Math.sin(Date.now() / 300) : 1;
     pushRound(distToCam(x, z), () => {
-      drawRing(cam, x, 0.18, z, 1.7 * pulse, col, isTarget ? 3.5 : 2);
+      drawRing(cam, x, 0.18, z, 1.7, col, isTarget ? 3.5 : 2);
       drawDisc(cam, x, 0.06, z, 0.5, 'rgba(255,255,255,0.35)');
     });
   });

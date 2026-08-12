@@ -392,8 +392,7 @@ function treePolys(t, cam) {
 }
 
 function treeCanopy(t, cam) {
-  const sw = 1 + 0.07 * Math.sin(Date.now() / 900 + t.x * 0.6);
-  const r = t.s * 2.0 * sw;
+  const r = t.s * 2.0;
   const y = 4.6 * t.s;
   drawDisc(cam, t.x, y, t.z, r, shade('#2f9e44', t.s));
   drawDisc(cam, t.x - r * 0.22, y + r * 0.18, t.z, r * 0.62, '#45c459');

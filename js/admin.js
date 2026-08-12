@@ -172,36 +172,41 @@ function tunnelStatus() { tunnelCall('status'); }
 function tunnelRestart() { tunnelCall('restart'); }
 
 // ============ ПОЛНЫЙ РЕСТАРТ ИГРЫ ============
-function adminFullRestart() {
+function restApi(path, opts) {
+  const headers = Object.assign({
+    'apikey': SUPABASE_ANON,
+    'Authorization': 'Bearer ' + SUPABASE_ANON,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=minimal',
+  }, (opts && opts.headers) || {});
+  return fetch(SUPABASE_URL + path, Object.assign({ headers }, opts)).then(r => {
+    if (!r.ok) return Promise.reject('HTTP ' + r.status);
+    return r;
+  });
+}
+
+async function adminFullRestart() {
   const btn = $('#adm-restart-btn');
   const st = $('#adm-restart-status');
-  const done = () => {
-    st.textContent = '✅ Сервер очищен. Перезагружаю игру...';
-    setTimeout(() => {
-      try {
-        const a = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
-        for (const n of Object.keys(a)) localStorage.removeItem(SAVE_PREFIX + n);
-      } catch (e) {}
-      localStorage.removeItem(REG_KEY);
-      localStorage.removeItem(CUR_KEY);
-      localStorage.removeItem('fc_bc_id');
-      location.reload();
-    }, 600);
-  };
-  if (!SB_READY) { done(); return; }
+  if (!confirm('Полный рестарт игры?\nСервер будет очищен: все сохранения, аккаунты, позиции и карточки игроков. Игра перезагрузится у всех. Продолжить?')) return;
   if (btn) btn.disabled = true;
-  st.textContent = '⏳ Очищаю сервер...';
-  const jobs = [];
-  for (const t of ['saves', 'positions', 'players']) {
-    jobs.push(sb.from(t).delete().neq('nick', '__none__'));
-  }
-  jobs.push(sb.from('cards').delete().neq('owner', null));
-  Promise.all(jobs).then(res => {
-    const anyErr = res.some(r => r.error);
-    if (anyErr) {
-      st.textContent = '⚠️ Частично очищено (ошибка RLS) — продолжаю перезагрузку.';
-    }
-    done();
-  }).catch(() => done());
+  st.textContent = '⏳ Очищаю сервер (REST)...';
+  const paths = [
+    '/rest/v1/saves?nick=neq.__none__',
+    '/rest/v1/positions?nick=neq.__none__',
+    '/rest/v1/players?nick=neq.__none__',
+    '/rest/v1/cards?owner=neq.null',
+  ];
+  const results = await Promise.all(paths.map(p => restApi(p, { method: 'DELETE' }).then(() => 'OK').catch(e => 'ERR ' + e)));
+  const errs = results.filter(r => r !== 'OK');
+  st.innerHTML = '✅ Сервер очищен' + (errs.length ? ' (ошибки: ' + errs.join(', ') + ')' : '') + '. Сбрасываю игру...';
+  try {
+    const a = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
+    for (const n of Object.keys(a)) localStorage.removeItem(SAVE_PREFIX + n);
+  } catch (e) {}
+  localStorage.removeItem(REG_KEY);
+  localStorage.removeItem(CUR_KEY);
+  localStorage.removeItem('fc_bc_id');
+  setTimeout(() => location.reload(), 400);
 }
 

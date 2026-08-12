@@ -31,9 +31,7 @@ function bindGlobal() {
   $('#adm-broadcast-btn').onclick = adminBroadcast;
   $('#tunnel-status-btn').onclick = tunnelStatus;
   $('#tunnel-restart-btn').onclick = tunnelRestart;
-  $('#adm-restart-btn').onclick = () => {
-    if (confirm('Полный рестарт игры?\nСервер будет очищен (все сохранения, аккаунты, карточки) и игра перезагрузится у всех. Продолжить?')) adminFullRestart();
-  };
+  $('#adm-restart-btn').onclick = adminFullRestart;
   $('#arena-tab-bot').onclick = () => arenaTab('bot');
   $('#arena-tab-pvp').onclick = () => arenaTab('pvp');
   $('#pvp-join').onclick = pvpJoin;

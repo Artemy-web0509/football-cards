@@ -292,8 +292,7 @@ function roadPolys(r, cam) {
 function drawFigures(cam, labels) {
   const skin = '#f2c99c';
   const drawOne = (px, pz, facing, c, nick, isMe) => {
-    const moving = isMe && state.world.moving;
-    const bob = moving ? 0.04 * Math.sin(Date.now() / 300) : 0;
+    const bob = 0;
     const sh = project(cam, px, 0.02, pz);
     if (sh) {
       wc.fillStyle = 'rgba(0,0,0,0.25)';

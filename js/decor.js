@@ -91,14 +91,13 @@ function fieldCenterRing(base, cam) {
 function homeFlagPolys(base, cam, labels) {
   const f = fieldRectFor(base);
   const fx = base.x, fz = f.z0 - 2.2;
-  const pulse = 1 + 0.15 * Math.sin(Date.now() / 400);
   const polys = boxPolys({ x: fx, z: fz, w: 0.4, d: 0.4, h: 7, color: '#8a5a2b' }, cam);
   const pts = [[fx, 7, fz], [fx + 3.2, 6.2, fz], [fx, 5.4, fz]].map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
   if (pts.length >= 3) {
     const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
     polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: '#ffd23d', depth, line: false });
   }
-  labels.push({ text: '🏠 Твоя база', wx: fx, wy: 8.4 * pulse, wz: fz, color: '#ffd23d', size: 15, mine: true });
+  labels.push({ text: '🏠 Твоя база', wx: fx, wy: 8.4, wz: fz, color: '#ffd23d', size: 15, mine: true });
   return polys;
 }
 
@@ -228,9 +227,8 @@ function drawGrass(cam) {
   for (const g of GRASS) {
     const dx = g.x - cam.x, dz = g.z - cam.z;
     if (dx * dx + dz * dz > 1900) continue;
-    const sw = 1 + 0.18 * Math.sin(Date.now() / 700 + g.ph);
     const p0 = project(cam, g.x, 0.02, g.z);
-    const p1 = project(cam, g.x, g.h * sw, g.z);
+    const p1 = project(cam, g.x, g.h, g.z);
     if (!p0 || !p1) continue;
     wc.strokeStyle = 'rgba(' + Math.round(60 * g.c) + ',' + Math.round(170 * g.c) + ',70,0.9)';
     wc.beginPath();
@@ -294,9 +292,8 @@ function roadPolys(r, cam) {
 function drawFigures(cam, labels) {
   const skin = '#f2c99c';
   const drawOne = (px, pz, facing, c, nick, isMe) => {
-    const moving = typeof state.world.moving !== 'undefined' ? state.world.moving : true;
-    const amp = moving ? (isMe ? 0.06 : 0.05) : 0;
-    const bob = amp * Math.sin(Date.now() / 260 + (isMe ? 0 : px));
+    const moving = isMe && state.world.moving;
+    const bob = moving ? 0.04 * Math.sin(Date.now() / 300) : 0;
     const sh = project(cam, px, 0.02, pz);
     if (sh) {
       wc.fillStyle = 'rgba(0,0,0,0.25)';

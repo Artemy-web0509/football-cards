@@ -171,3 +171,37 @@ function tunnelCall(cmd) {
 function tunnelStatus() { tunnelCall('status'); }
 function tunnelRestart() { tunnelCall('restart'); }
 
+// ============ ПОЛНЫЙ РЕСТАРТ ИГРЫ ============
+function adminFullRestart() {
+  const btn = $('#adm-restart-btn');
+  const st = $('#adm-restart-status');
+  const done = () => {
+    st.textContent = '✅ Сервер очищен. Перезагружаю игру...';
+    setTimeout(() => {
+      try {
+        const a = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
+        for (const n of Object.keys(a)) localStorage.removeItem(SAVE_PREFIX + n);
+      } catch (e) {}
+      localStorage.removeItem(REG_KEY);
+      localStorage.removeItem(CUR_KEY);
+      localStorage.removeItem('fc_bc_id');
+      location.reload();
+    }, 600);
+  };
+  if (!SB_READY) { done(); return; }
+  if (btn) btn.disabled = true;
+  st.textContent = '⏳ Очищаю сервер...';
+  const jobs = [];
+  for (const t of ['saves', 'positions', 'players']) {
+    jobs.push(sb.from(t).delete().neq('nick', '__none__'));
+  }
+  jobs.push(sb.from('cards').delete().neq('owner', null));
+  Promise.all(jobs).then(res => {
+    const anyErr = res.some(r => r.error);
+    if (anyErr) {
+      st.textContent = '⚠️ Частично очищено (ошибка RLS) — продолжаю перезагрузку.';
+    }
+    done();
+  }).catch(() => done());
+}
+

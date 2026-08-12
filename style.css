@@ -190,22 +190,41 @@ body {
 /* ---------- СЕНСОРНОЕ УПРАВЛЕНИЕ (телефон) ---------- */
 #world-canvas { touch-action: none; -webkit-user-select: none; user-select: none; }
 .touch-controls {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
-  display: flex; justify-content: space-between; align-items: flex-end;
-  padding: 0 14px 22px; pointer-events: none;
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 40;
+  padding: 0; pointer-events: none;
 }
 .touch-controls.hidden { display: none; }
-.tc-dpad, .tc-cluster { pointer-events: auto; }
-.tc-dpad {
-  display: grid; grid-template-columns: repeat(3, 62px); grid-template-rows: repeat(2, 62px);
-  gap: 8px;
+.tc-zone { position: absolute; top: 0; bottom: 0; pointer-events: auto; touch-action: none; }
+#tc-move-zone { left: 0; width: 55%; }
+#tc-cam-zone { right: 0; width: 45%; }
+.tc-joystick {
+  position: absolute; left: 26px; bottom: 34px;
+  width: 128px; height: 128px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.35);
+  background: radial-gradient(circle, rgba(255,255,255,.12), rgba(255,255,255,.03));
+  box-shadow: 0 6px 20px rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
 }
-.tc-dpad .tc-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
-.tc-dpad .tc-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
-.tc-dpad .tc-btn:nth-child(3) { grid-column: 2; grid-row: 2; }
-.tc-dpad .tc-btn:nth-child(4) { grid-column: 3; grid-row: 2; }
-.tc-cluster { display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
-.tc-rotate, .tc-actions { display: flex; gap: 10px; }
+.tc-stick-knob {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.95), rgba(61,255,176,.85));
+  box-shadow: 0 4px 14px rgba(0,0,0,.55);
+  transition: transform .04s linear;
+  will-change: transform;
+}
+.tc-stick-knob.active { background: radial-gradient(circle, #b7ffe0, #3df); }
+.tc-cam-hint {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  color: rgba(255,255,255,.5); font-size: 15px; font-weight: 700;
+  text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  pointer-events: none; user-select: none;
+}
+.tc-cluster {
+  position: absolute; right: 16px; bottom: 26px;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+  pointer-events: auto;
+}
+.tc-actions { display: flex; gap: 10px; }
 .tc-btn {
   width: 62px; height: 62px; border-radius: 16px;
   border: 1px solid rgba(255,255,255,.28);

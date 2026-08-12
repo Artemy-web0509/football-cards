@@ -25,7 +25,7 @@ const ADMIN_PASS = 'ArtikartLuk0509';
 const ACCOUNTS_KEY = 'fc_accounts';
 const CUR_KEY = 'fc_current_user';
 const SAVE_PREFIX = 'fc_save_';
-const APP_VERSION = 'v16';
+const APP_VERSION = 'v17';
 const VER_KEY = 'fc_ver';
 
 function checkAppVersion() {

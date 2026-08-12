@@ -8,7 +8,7 @@
 // Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
 (function () {
   try {
-    var V = 'v14';
+    var V = 'v15';
     var prev = localStorage.getItem('fc_ver');
     if (prev !== V) {
       localStorage.removeItem('fc_registry');
@@ -77,17 +77,15 @@
   <div class="hud-help">W A S D — ходить • ← → или ПКМ — камера • E или клик — действие • B — рюкзак</div>
   <canvas id="minimap" width="180" height="180"></canvas>
   <div id="touch-controls" class="touch-controls hidden">
-    <div class="tc-dpad">
-      <button class="tc-btn" data-key="KeyW">▲</button>
-      <button class="tc-btn" data-key="KeyA">◀</button>
-      <button class="tc-btn" data-key="KeyS">▼</button>
-      <button class="tc-btn" data-key="KeyD">▶</button>
+    <div class="tc-zone" id="tc-move-zone">
+      <div class="tc-joystick" id="tc-move-stick">
+        <div class="tc-stick-knob" id="tc-move-knob"></div>
+      </div>
+    </div>
+    <div class="tc-zone" id="tc-cam-zone">
+      <div class="tc-cam-hint">👆 веди пальцем — поворот камеры</div>
     </div>
     <div class="tc-cluster">
-      <div class="tc-rotate">
-        <button class="tc-btn" id="tc-rotl">⟲</button>
-        <button class="tc-btn" id="tc-rotr">⟳</button>
-      </div>
       <div class="tc-actions">
         <button class="tc-btn tc-act" id="tc-e">⚡</button>
         <button class="tc-btn tc-act" id="tc-b">🎒</button>

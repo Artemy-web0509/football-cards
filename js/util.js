@@ -25,7 +25,7 @@ const ADMIN_PASS = 'ArtikartLuk0509';
 const ACCOUNTS_KEY = 'fc_accounts';
 const CUR_KEY = 'fc_current_user';
 const SAVE_PREFIX = 'fc_save_';
-const APP_VERSION = 'v14';
+const APP_VERSION = 'v15';
 const VER_KEY = 'fc_ver';
 
 function checkAppVersion() {
@@ -49,7 +49,7 @@ function rarityForRating(r) {
   if (r <= 79) return 'silver';
   if (r <= 86) return 'gold';
   if (r <= 92) return 'diamond';
-  if (r <= 110) return 'secret';
+  if (r <= 100) return 'secret';
   return 'bingi';
 }
 
@@ -66,7 +66,14 @@ function registryAll() { return REGISTRY; }
 function generatePlayer(rarityId, pos, forcedRating, claimIt) {
   const doClaim = claimIt !== false;
   if (rarityId === 'bingi') {
-    const p = { id: idCounter++, key: 'Бинги', name: 'Бинги', pos, rating: 111, rarity: 'bingi', flag: '🌈' };
+    const pool = REAL_PLAYERS.filter(x => !claimedKeys[x.name] && x.rating >= 101 && x.rating <= 110 && (!pos || x.pos === pos));
+    const src = pool.length ? pick(pool) : null;
+    if (src) {
+      const p = { id: idCounter++, key: src.name, name: src.name, pos: src.pos, rating: src.rating, rarity: 'bingi', flag: src.flag };
+      if (doClaim) { claimedKeys[p.key] = true; claimRemote(p); }
+      return p;
+    }
+    const p = { id: idCounter++, key: 'Бинги', name: 'Бинги', pos, rating: 110, rarity: 'bingi', flag: '🌈' };
     if (doClaim) { claimedKeys[p.key] = true; claimRemote(p); }
     return p;
   }
@@ -140,7 +147,9 @@ function genShadow(rarityId, pos, forcedRating) {
 // Визуальная генерация (боты, рулетка, чужие поля) — НЕ занимает реального игрока
 function generateFakePlayer(rarityId, pos, forcedRating) {
   if (rarityId === 'bingi') {
-    return { id: idCounter++, key: 'Бинги', name: 'Бинги', pos, rating: 111, rarity: 'bingi', flag: '🌈', fake: true };
+    const pool = REAL_PLAYERS.filter(x => x.rating >= 101 && x.rating <= 110 && (!pos || x.pos === pos));
+    const src = pool.length ? pick(pool) : null;
+    return { id: idCounter++, key: src ? src.name : 'Бинги', name: src ? src.name : 'Бинги', pos, rating: src ? src.rating : 110, rarity: 'bingi', flag: src ? src.flag : '🌈', fake: true };
   }
   const range = RARITIES[rarityId].rating;
   let pool = REAL_PLAYERS.filter(x =>

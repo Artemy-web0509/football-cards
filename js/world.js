@@ -221,12 +221,23 @@ function updateWorld(dt) {
   if (keys.KeyD) { mx += Math.cos(p.yaw); mz -= Math.sin(p.yaw); }
   if (keys.ArrowLeft) p.yaw -= 1.7 * dt;
   if (keys.ArrowRight) p.yaw += 1.7 * dt;
+  if (typeof moveVecFromJoy === 'function') {
+    const j = moveVecFromJoy();
+    if (j.fwd || j.strafe) {
+      mx += j.fwd * Math.sin(p.yaw) + j.strafe * Math.cos(p.yaw);
+      mz += j.fwd * Math.cos(p.yaw) - j.strafe * Math.sin(p.yaw);
+    }
+    if (j.yaw) p.yaw += j.yaw;
+  }
   const len = Math.hypot(mx, mz);
   if (len > 0) {
     p.facing = Math.atan2(mx, mz);
+    p.moving = true;
     const nx = p.x + (mx / len) * sp * dt;
     const nz = p.z + (mz / len) * sp * dt;
     if (!worldCollides(nx, nz)) { p.x = nx; p.z = nz; }
+  } else if (p.moving !== false) {
+    p.moving = false;
   }
 }
 
@@ -248,9 +259,8 @@ function tryEnter() {
   if (o.type === 'spinner') { renderSpinnerPanel(); showScreen('spinner'); }
   else if (o.type === 'field') {
     if (o.idx !== homeFieldIndex()) { toast('Это чужое поле — трогать нельзя!'); return; }
-    if (state.held) placeHeld();
-    else if (benchCount() > 0) pickUpBestBench();
-    else { renderFieldScreen(o.idx); showScreen('field'); }
+    if (state.held) { placeHeld(); return; }
+    renderFieldScreen(o.idx); showScreen('field');
   }
   else if (o.type === 'arena') { renderArena(); showScreen('arena'); }
   else if (o.type === 'market') { showScreen('market'); }

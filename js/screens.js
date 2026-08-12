@@ -380,18 +380,21 @@ function onSpinLand(p) {
     claimLocal(player);
     const res = await claimRemote(player);
     if (res === 'TAKEN') {
-      toast('❌ Эту карточку только что забрали — попробуй ещё раз');
+      toast('❌ Эту карточку только что забрали — монеты за спин возвращены');
       delete claimedKeys[player.key];
+      state.coins += SPIN_COST;
+      save(); renderTop();
       renderSpinnerPanel();
       return;
     }
     state.coins -= price;
+    state.players.push(player);
+    if (state.starters.length < 11) state.starters.push(player.id);
+    ensureLineup();
     save();
     renderTop();
-    setHeld(player);
     closeScreen();
-    updateHeldHud();
-    toast('Выкуплено за ' + price + ' 💰. Нажми E — на поле, или B — в рюкзак');
+    toast('✅ ' + player.name + ' забран за ' + price + ' 💰 — теперь в рюкзаке. Поставь на поле через 🎒 или E у поля');
   };
 }
 

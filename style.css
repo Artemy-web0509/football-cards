@@ -288,6 +288,11 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
 .pc-flag { font-size: 18px; }
 .pc-income { font-size: 10px; font-weight: 700; }
 .pc-love { color: #ff9dc5; text-shadow: 0 0 8px #ff4d9e; }
+.mut-glow { animation: mutGlow 1.6s ease-in-out infinite; border-color: #ffe66b !important; }
+@keyframes mutGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,230,107,.5), 0 6px 16px rgba(0,0,0,.45); }
+  50% { box-shadow: 0 0 26px rgba(255,230,107,1), 0 6px 16px rgba(0,0,0,.45); }
+}
 .love-banner {
   background: linear-gradient(135deg, rgba(255,77,158,.25), rgba(255,180,40,.2));
   border: 1px solid #ff7bac; border-radius: 14px; padding: 12px;
@@ -324,17 +329,24 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
 /* ---------- СОСТАВ ---------- */
 .lineup-block { margin-bottom: 14px; }
 .lineup-title { font-weight: 800; font-size: 15px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 8px; text-align: center; }
-.lineup-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.lineup-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .slot {
-  width: 104px; height: 166px; cursor: pointer;
-  border-radius: 12px; border: 2px dashed var(--border);
+  width: 130px; height: 200px; cursor: pointer;
+  border-radius: 14px; border: 2px dashed var(--border);
   background: rgba(255,255,255,.04);
   display: flex; align-items: center; justify-content: center;
-  color: var(--text-dim); font-size: 12px; text-align: center;
-  position: relative; transition: .2s;
+  color: var(--text-dim); font-size: 13px; text-align: center;
+  position: relative; transition: .2s; padding: 0;
 }
 .slot:hover { border-color: var(--accent); }
-.slot .pcard { width: 100%; height: 100%; }
+.slot .pcard { width: 100%; height: 100%; padding: 14px 8px; }
+.slot .pc-rating { font-size: 36px; }
+.slot .pc-name { font-size: 13px; }
+.slot .pc-rname { font-size: 12px; }
+.slot .pc-income { font-size: 12px; }
+.slot .col-sell { margin-top: 6px; }
+.empty-slot span { font-size: 14px; font-weight: 700; line-height: 1.4; color: var(--accent); }
+.empty-slot:hover { background: rgba(255,255,255,.08); border-color: var(--accent); }
 
 .formation-bar { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
 .formation-chip { background: var(--panel); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-weight: 700; cursor: pointer; }

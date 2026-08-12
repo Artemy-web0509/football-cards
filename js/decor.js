@@ -415,8 +415,29 @@ function card3DPolys(cam, x, z, rc, flag, name, rating, facing, mut, sc) {
   const w = 1.7 * s, d = 0.4 * s, h = 3.4 * s;
   const y = 0.12, cy = y + h / 2;
   const polys = boxPolys({ x, z, w, d, h, color: rc }, cam);
+  if (mut) polys.push(...glowRingPolys(cam, x, z, w, h, mut.color || '#ffe66b'));
   pushRound(distToCam(x, z), () => drawCardFaceText(cam, x, cy, z, w, h, rc, flag, name, rating, facing, mut));
   return polys;
+}
+
+function glowRingPolys(cam, x, z, w, h, color) {
+  const polys = [];
+  const a = 0.09, b = 0.26;
+  const rgba = hexToRgba(color || '#ffe66b', 0.45);
+  const pts = [[x - w / 2 - a, b, z - a], [x + w / 2 + a, b, z - a], [x + w / 2 + a, b, z + a], [x - w / 2 - a, b, z + a]]
+    .map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
+  if (pts.length >= 4) {
+    const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+    polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: rgba, depth, line: false });
+  }
+  return polys;
+}
+
+function hexToRgba(hex, al) {
+  const m = String(hex).replace('#', '');
+  const n = m.length === 3 ? m.split('').map(c => c + c).join('') : m;
+  const v = parseInt(n, 16);
+  return 'rgba(' + ((v >> 16) & 255) + ',' + ((v >> 8) & 255) + ',' + (v & 255) + ',' + al + ')';
 }
 
 function fieldCardsPolys(f, cards, color, cam, labels) {

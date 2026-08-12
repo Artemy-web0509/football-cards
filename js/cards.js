@@ -48,7 +48,8 @@ function cardHTML(p) {
   const mu = mutationOf(p);
   const pr = parentOf(p);
   const love = pr && loveBuff() > 1;
-  return `<div class="pcard rarity-${p.rarity}">
+  const glow = mu ? ' mut-glow' : '';
+  return `<div class="pcard rarity-${p.rarity}${glow}">
     <div class="pc-flag">${p.flag}</div>
     <div class="pc-rating">${p.rating}</div>
     <div class="pc-pos">${POS_LABEL[p.pos]}</div>
@@ -63,7 +64,8 @@ function miniCardHTML(p) {
   const mu = mutationOf(p);
   const pr = parentOf(p);
   const love = pr && loveBuff() > 1;
-  return `<div class="pcard-mini rarity-${p.rarity}">
+  const glow = mu ? ' mut-glow' : '';
+  return `<div class="pcard-mini rarity-${p.rarity}${glow}">
     <div class="pc-flag">${p.flag}</div>
     <div class="pc-rating">${p.rating}</div>
     <div class="pc-pos">${POS_LABEL[p.pos]}</div>

@@ -38,6 +38,48 @@ function renderUpgradeList(container, ids) {
 
 function renderLuckUpgrades() {
   renderUpgradeList('#luck-upgrades', ['luck']);
+  let html = '';
+  const lbLeft = luckBoostMinutesLeft();
+  if (lbLeft > 0) {
+    const lb = activeLuckBoost();
+    html += `<div class="love-banner" style="border-color:#4ade80;color:#b7f5cd;">🍀 Удача «${lb.icon} ${lb.name}» активна — осталось ${lbLeft} мин. Шансы редких карточек повышены!</div>`;
+  } else {
+    html += `<div class="love-banner" style="border-color:#4ade80;color:#b7f5cd;">🍀 Сейчас удача не активна. Включи её за монеты — чем сильнее удача, тем выше шансы редких карточек.</div>`;
+  }
+  html += `<div class="boost-mins">
+      <label>Удача на:</label>
+      <select id="luck-min-select"><option value="5">5 мин</option><option value="10">10 мин</option><option value="15">15 мин</option><option value="30">30 мин</option></select>
+    </div>`;
+  html += `<div class="boost-tiers">` + LUCK_BOOSTS.map(t => {
+    const mins = 5;
+    const cost = t.costPerMin * mins;
+    return `<div class="boost-tier" data-buy-luck="${t.id}">
+      <div><div class="boost-tier-name">${t.icon} ${t.name}</div>
+      <div class="boost-tier-desc">${t.desc}</div></div>
+      <div class="boost-tier-cost">${cost} 💰 / ${mins} мин</div>
+    </div>`;
+  }).join('') + `</div>`;
+  html += `<div class="love-banner" style="border-color:#ffd23d;color:#ffe9a8;">✨ Следующая мутация карточек — примерно через ${mutationCountdownMinutes()} мин (шанс ${Math.round(MUTATION_CHANCE * 100)}%). Мутировавшие карточки светятся и дают больше монет!</div>`;
+  $('#luck-upgrades').insertAdjacentHTML('beforeend', html);
+  $$('#luck-upgrades [data-buy-luck]').forEach(b => b.onclick = () => buyLuckBoost(b.dataset.buyLuck));
+}
+
+function buyLuckBoost(tierId) {
+  const tier = LUCK_BOOSTS.find(t => t.id === tierId);
+  if (!tier) return;
+  const minsSel = $('#luck-min-select');
+  const mins = minsSel ? parseInt(minsSel.value, 10) || 5 : 5;
+  const cost = tier.costPerMin * mins;
+  if (state.coins < cost) { toast('Не хватает монет — нужно ' + cost + ' 💰'); flashBtn($('#luck-upgrades [data-buy-luck="' + tierId + '"]')); return; }
+  state.coins -= cost;
+  const until = Date.now() + mins * 60000;
+  if (state.luckBoost && state.luckBoost.until > Date.now()) {
+    state.luckBoost = { tier: tier.id, until: Math.min(state.luckBoost.until + mins * 60000, Date.now() + 3600 * 60000) };
+  } else {
+    state.luckBoost = { tier: tier.id, until };
+  }
+  save(); renderTop(); renderLuckUpgrades();
+  toast(tier.icon + ' Удача «' + tier.name + '» на ' + mins + ' мин включена (−' + cost + ' 💰)');
 }
 
 function renderFieldUpg() {
@@ -53,7 +95,7 @@ function renderFieldScreen(idx) {
   if (loveBuff() > 1) html += `<div class="love-banner">💞 Любовь Мамы и Папы активна! Доход им обоим ×2</div>`;
   html += formationBarHTML();
   html += `<button class="btn autofill-btn" id="autofill-btn">✨ Авто-состав (лучшие)</button>`;
-  html += `<div class="shop-note">Схема ${f.name}. Это твоя команда. Новых игроков получай из спиннера и ставь на поле клавишей E.</div>`;
+  html += `<div class="shop-note">Схема ${f.name}. Это твоя команда. Нажми на пустое место — выбери запасного игрока. Новичков ставь на поле клавишей E.</div>`;
   const counts = formationCounts();
   const groups = lineupGroups();
   for (const pos of POS_ORDER) {
@@ -62,7 +104,7 @@ function renderFieldScreen(idx) {
     for (let i = 0; i < need; i++) {
       const pid = groups[pos][i];
       const p = pid ? getPlayer(pid) : null;
-      html += p ? `<div class="slot">${cardHTML(p)}<button class="col-sell" data-bk-rem="${p.id}" title="В запас">⬇️ В запас</button></div>` : `<div class="slot">+ пусто</div>`;
+      html += p ? `<div class="slot">${cardHTML(p)}<button class="col-sell" data-bk-rem="${p.id}" title="В запас">⬇️ В запас</button></div>` : `<div class="slot empty-slot" data-empty="${pos}"><span>＋<br>Выбрать запасного</span></div>`;
     }
     html += `</div></div>`;
   }
@@ -70,6 +112,36 @@ function renderFieldScreen(idx) {
   $('#autofill-btn').onclick = autofill;
   $$('#field-lineup [data-form]').forEach(c => c.onclick = () => { state.formation = c.dataset.form; save(); renderFieldScreen(idx); });
   $$('#field-lineup [data-bk-rem]').forEach(c => c.onclick = () => removeFromStarters(+c.dataset.bkRem));
+  $$('#field-lineup [data-empty]').forEach(c => c.onclick = () => openBenchPicker(c.dataset.empty));
+}
+
+function openBenchPicker(pos) {
+  const bench = state.players.filter(p => !state.starters.includes(p.id))
+    .sort((a, b) => (b.pos === pos) - (a.pos === pos) || b.rating - a.rating);
+  if (!bench.length) {
+    toast('Запасных нет — получи игрока из спиннера 🎡');
+    return;
+  }
+  $('#bench-modal-title').textContent = '🎒 Запасные — поставь на позицию ' + posName(pos);
+  $('#bench-modal-list').innerHTML = bench.map(p => `<div class="col-card">${cardHTML(p)}
+    <button class="col-sell" data-bench-pick="${p.id}">⭐ Поставить в основу</button>
+  </div>`).join('');
+  $('#bench-modal').classList.remove('hidden');
+  $$('#bench-modal [data-bench-pick]').forEach(b => b.onclick = () => benchPlace(+b.dataset.benchPick, pos));
+  $('#bench-modal-close').onclick = hideBenchModal;
+  $('#bench-modal').onclick = e => { if (e.target === $('#bench-modal')) hideBenchModal(); };
+}
+
+function hideBenchModal() { $('#bench-modal').classList.add('hidden'); }
+
+function benchPlace(id, pos) {
+  const p = getPlayer(id); if (!p) return;
+  if (state.starters.length >= 11) { toast('Мест в основе нет — сначала убери кого-то в запас'); return; }
+  state.starters.push(id);
+  ensureLineup(); save(); refreshMyFieldOwner();
+  hideBenchModal();
+  renderFieldScreen(currentField);
+  toast('⭐ ' + p.name + ' в основе!');
 }
 
 function renderBackpack() {

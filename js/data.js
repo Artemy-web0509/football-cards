@@ -60,11 +60,11 @@ const CUPS = [
 // Мутации карточек (каждый час случайная карточка получает случайную мутацию).
 // Множитель умножает доход карточки. Админ может выдать любую мутацию с любым множителем.
 const MUTATIONS = [
-  { id: 'shiny',   name: 'Сияние',       icon: '✨', base: 1.5  },
-  { id: 'cursed',  name: 'Проклятие',    icon: '💀', base: 2.5  },
-  { id: 'venom',   name: 'Ядовитая',     icon: '🐍', base: 3    },
-  { id: 'rainbow', name: 'Радуга',       icon: '🌈', base: 6    },
-  { id: 'divine',  name: 'Божественная', icon: '👼', base: 12   },
+  { id: 'shiny',   name: 'Сияние',       icon: '✨', base: 1.5,  color: '#ffe66b' },
+  { id: 'cursed',  name: 'Проклятие',    icon: '💀', base: 2.5,  color: '#c050ff' },
+  { id: 'venom',   name: 'Ядовитая',     icon: '🐍', base: 3,    color: '#39c98a' },
+  { id: 'rainbow', name: 'Радуга',       icon: '🌈', base: 6,    color: '#57c7ff' },
+  { id: 'divine',  name: 'Божественная', icon: '👼', base: 12,   color: '#ff2f9e' },
 ];
 
 // Временная удача для спиннера (панель 🍀): включается на N минут, улучшает шансы
@@ -74,8 +74,9 @@ const LUCK_BOOSTS = [
   { id: 'mega',   name: 'Мега удача',    icon: '⭐', desc: '+10% золото, +5% алмаз, +2% секрет',   gold: 0.10, diamond: 0.05,  secret: 0.02,  costPerMin: 2000 },
 ];
 
-// Интервал мутаций: раз в час
+// Интервал мутаций: раз в час. Шанс срабатывания — 50% (иначе ждём следующий час)
 const MUTATION_INTERVAL = 3600 * 1000;
+const MUTATION_CHANCE = 0.5;
 
 // Соперники (боты) на стадионе. Награда — ФАНАТЫ
 const OPPONENTS = [

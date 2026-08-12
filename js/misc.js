@@ -46,6 +46,7 @@ function applyHourlyMutation(catchUp) {
   let applied = 0;
   for (let k = 0; k < overdue; k++) {
     if (!state.players.length) break;
+    if (Math.random() >= MUTATION_CHANCE) continue;
     const pool = state.players.filter(p => !p.mut);
     const chosen = pool.length ? pick(pool) : pick(state.players);
     const m = pick(MUTATIONS);
@@ -55,5 +56,17 @@ function applyHourlyMutation(catchUp) {
   }
   if (applied) { save(); renderTop(); }
   state.nextMutationAt = now + MUTATION_INTERVAL;
+}
+
+function mutationCountdownMinutes() {
+  if (!state) return 60;
+  const ms = (state.nextMutationAt || Date.now() + MUTATION_INTERVAL) - Date.now();
+  return Math.max(1, Math.ceil(ms / 60000));
+}
+
+function luckBoostMinutesLeft() {
+  const lb = state.luckBoost;
+  if (!lb || !lb.tier || lb.until <= Date.now()) return 0;
+  return Math.ceil((lb.until - Date.now()) / 60000);
 }
 

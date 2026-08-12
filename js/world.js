@@ -117,6 +117,7 @@ for (let i = 0; i < 9; i++) CLOUDS.push({ nx: Math.random(), ny: 0.08 + Math.ran
 const keys = {};
 document.addEventListener('keydown', e => {
   keys[e.code] = true;
+  if (e.code === 'Escape') { if (!$('#bench-modal').classList.contains('hidden')) hideBenchModal(); return; }
   if (activeScreen === 'world') {
     if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') e.preventDefault();
     if (e.code === 'KeyE') tryEnter();

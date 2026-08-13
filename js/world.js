@@ -347,6 +347,7 @@ function drawPoly(poly) {
 
 function boxPolys(o, cam) {
   const x0 = o.x - o.w / 2, x1 = o.x + o.w / 2, z0 = o.z - o.d / 2, z1 = o.z + o.d / 2, y0 = 0, y1 = o.h;
+  const md = Math.hypot(o.x - cam.x, (y0 + y1) / 2 - cam.y, o.z - cam.z);
   const defs = [
     { pts: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], n: { x: 0, y: 1, z: 0 }, br: 1.18 },
     { pts: [[x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0]], n: { x: 1, y: 0, z: 0 }, br: 0.95 },
@@ -367,8 +368,7 @@ function boxPolys(o, cam) {
     const f = d.br * (0.6 + 0.4 * ld);
     const proj = d.pts.map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
     if (proj.length >= 3) {
-      const depth = proj.reduce((s, p) => s + p.z, 0) / proj.length;
-      polys.push({ pts: proj.map(p => ({ x: p.x, y: p.y })), color: shade(o.color, f), depth, line: false });
+      polys.push({ pts: proj.map(p => ({ x: p.x, y: p.y })), color: shade(o.color, f), depth: md, line: false });
     }
   }
   return polys;

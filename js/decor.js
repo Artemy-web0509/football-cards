@@ -415,8 +415,7 @@ function glowRingPolys(cam, x, z, w, h, color) {
   const pts = [[x - w / 2 - a, b, z - a], [x + w / 2 + a, b, z - a], [x + w / 2 + a, b, z + a], [x - w / 2 - a, b, z + a]]
     .map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
   if (pts.length >= 4) {
-    const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
-    polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: rgba, depth, line: false });
+    polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: rgba, line: false, flat: true });
   }
   return polys;
 }
@@ -479,8 +478,7 @@ function drawArenaRing(cx, cz, cam) {
       [cx + Math.cos(a) * r2, 0.24, cz + Math.sin(a) * r2],
     ].map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
     if (pts.length >= 4) {
-      const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
-      polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: i % 2 ? '#b3572e' : '#e8b464', depth, line: false });
+      polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: i % 2 ? '#b3572e' : '#e8b464', line: false, flat: true });
     }
   }
   pushRound(distToCam(cx, cz), () => drawRing(cam, cx, 0.26, cz, 4.6, 'rgba(255,255,255,0.7)', 1.4));

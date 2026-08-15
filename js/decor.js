@@ -16,11 +16,11 @@ function fieldSlots() {
   return rows;
 }
 
-function groundPoly(cam, x0, z0, x1, z1, y, color) {
+function groundPoly(cam, x0, z0, x1, z1, y, color, thin) {
   const pts = projectPoly(cam, [[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]]);
   if (!pts) return null;
   const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
-  return { pts: pts.map(p => ({ x: p.x, y: p.y })), color, depth, line: false, flat: true };
+  return { pts: pts.map(p => ({ x: p.x, y: p.y })), color, depth, line: false, flat: true, thin: !!thin };
 }
 
 // Ровный одноцветный пол (без клетки и мерцания). Один большой квад с запасом.
@@ -57,7 +57,7 @@ function fieldPolys(base, cam, isHome) {
   const field = groundPoly(cam, f.x0 - 3.5, f.z0 - 3, f.x1 + 3.5, f.z1 + 3, 0.012, isHome ? '#3fbf5a' : '#36b04f');
   if (field) polys.push(field);
   const borderCol = isHome ? '#ffd23d' : '#ffffff';
-  const line = (a, b, c, d, col) => { const g = groundPoly(cam, a, b, c, d, 0.03, col); if (g) polys.push(g); };
+  const line = (a, b, c, d, col) => { const g = groundPoly(cam, a, b, c, d, 0.03, col, true); if (g) polys.push(g); };
   line(f.x0 - 0.4, f.z0 - 0.4, f.x1 + 0.4, f.z0 + 0.4, borderCol);
   line(f.x0 - 0.4, f.z1 - 0.4, f.x1 + 0.4, f.z1 + 0.4, borderCol);
   line(f.x0 - 0.4, f.z0, f.x0 + 0.4, f.z1, borderCol);
@@ -272,7 +272,7 @@ function roadPolys(r, cam) {
   const polys = [];
   const e = groundPoly(cam, r.x0, r.z0, r.x1, r.z1, 0.015, '#9a7a55');
   if (e) polys.push(e);
-  const stripe = (a, b, c, d) => { const g = groundPoly(cam, a, b, c, d, 0.018, 'rgba(255,235,180,0.45)'); if (g) polys.push(g); };
+  const stripe = (a, b, c, d) => { const g = groundPoly(cam, a, b, c, d, 0.018, 'rgba(255,235,180,0.45)', true); if (g) polys.push(g); };
   if (r.x0 === r.x1) {
     for (let z = r.z0; z < r.z1; z += 8) stripe(r.x0 - 0.7, z, r.x1 + 0.7, z + 0.6);
   } else {
@@ -454,7 +454,7 @@ function arenaPolys(cam) {
   const polys = [];
   const g = groundPoly(cam, x0, z0, x1, z1, 0.2, '#c9a25f');
   if (g) polys.push(g);
-  const line = (a2, b2, c2, d2, col) => { const gg = groundPoly(cam, a2, b2, c2, d2, 0.3, col); if (gg) polys.push(gg); };
+  const line = (a2, b2, c2, d2, col) => { const gg = groundPoly(cam, a2, b2, c2, d2, 0.3, col, true); if (gg) polys.push(gg); };
   line(x0 - 0.5, z0 - 0.5, x1 + 0.5, z0 + 0.5, '#ffffff');
   line(x0 - 0.5, z1 - 0.5, x1 + 0.5, z1 + 0.5, '#ffffff');
   line(x0 - 0.5, z0, x0 + 0.5, z1, '#ffffff');

@@ -111,8 +111,9 @@ async function logout() {
   if (currentUser && state) {
     if (SB_READY) {
       try {
-        await sb.from('saves').upsert({ nick: currentUser, state, updated_at: new Date().toISOString() }, { onConflict: 'nick' });
-      } catch (e) {}
+        const { error } = await sb.from('saves').upsert({ nick: currentUser, state, updated_at: new Date().toISOString() }, { onConflict: 'nick' });
+        if (error) console.warn('cloud save:', error.message);
+      } catch (e) { console.warn('cloud save error:', e); }
     } else if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/save', JSON.stringify({ nick: currentUser, state }));
     }

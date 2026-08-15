@@ -64,7 +64,9 @@ function scheduleCloudSave() {
   cloudSaveTimer = setTimeout(() => {
     if (!currentUser || !state) return;
     if (SB_READY) {
-      sb.from('saves').upsert({ nick: currentUser, state, updated_at: new Date().toISOString() }, { onConflict: 'nick' }).catch(() => {});
+      try {
+        sb.from('saves').upsert({ nick: currentUser, state, updated_at: new Date().toISOString() }, { onConflict: 'nick' }).then(() => {});
+      } catch (e) {}
       return;
     }
     fetch('/api/save', {

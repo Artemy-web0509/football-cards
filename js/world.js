@@ -336,6 +336,28 @@ function shade(hex, f) {
 
 function drawPoly(poly) {
   if (poly.pts.length < 3) return;
+  if (poly.thin) {
+    const p = poly.pts, n = p.length;
+    let best = -1, bi = -1;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const d = (p[i].x - p[j].x) * (p[i].x - p[j].x) + (p[i].y - p[j].y) * (p[i].y - p[j].y);
+      if (d > best) { best = d; bi = i; }
+    }
+    const a = p[bi], b = p[(bi + 1) % n];
+    const c = p[(bi + 2) % n], d = p[(bi + 3) % n];
+    const mx1 = (a.x + b.x) / 2, my1 = (a.y + b.y) / 2;
+    const mx2 = (c.x + d.x) / 2, my2 = (c.y + d.y) / 2;
+    const thickness = Math.hypot(mx1 - mx2, my1 - my2);
+    wc.strokeStyle = poly.color;
+    wc.lineWidth = Math.max(1.4, thickness);
+    wc.lineCap = 'round';
+    wc.beginPath();
+    wc.moveTo(mx1, my1);
+    wc.lineTo(mx2, my2);
+    wc.stroke();
+    return;
+  }
   wc.beginPath();
   wc.moveTo(poly.pts[0].x, poly.pts[0].y);
   for (let i = 1; i < poly.pts.length; i++) wc.lineTo(poly.pts[i].x, poly.pts[i].y);

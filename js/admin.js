@@ -197,7 +197,9 @@ async function adminFullRestart() {
     '/rest/v1/players?nick=neq.__none__',
     '/rest/v1/cards?owner=neq.null',
   ];
-  const results = await Promise.all(paths.map(p => restApi(p, { method: 'DELETE' }).then(() => 'OK').catch(e => 'ERR ' + e)));
+  const jobs = paths.map(p => restApi(p, { method: 'DELETE' }).then(() => 'OK').catch(e => 'ERR ' + e));
+  if (!SB_READY) jobs.push(fetch('/api/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.ok ? 'OK' : 'ERR /api/reset').catch(e => 'ERR /api/reset'));
+  const results = await Promise.all(jobs);
   const errs = results.filter(r => r !== 'OK');
   st.innerHTML = '✅ Сервер очищен' + (errs.length ? ' (ошибки: ' + errs.join(', ') + ')' : '') + '. Сбрасываю игру...';
   try {

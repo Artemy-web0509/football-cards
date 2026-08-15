@@ -350,7 +350,7 @@ function drawPoly(poly) {
     const mx2 = (c.x + d.x) / 2, my2 = (c.y + d.y) / 2;
     const thickness = Math.hypot(mx1 - mx2, my1 - my2);
     wc.strokeStyle = poly.color;
-    wc.lineWidth = Math.max(2.6, thickness);
+    wc.lineWidth = Math.max(3.6, thickness);
     wc.lineCap = 'butt';
     wc.beginPath();
     wc.moveTo(mx1, my1);

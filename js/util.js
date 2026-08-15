@@ -25,7 +25,7 @@ const ADMIN_PASS = 'ArtikartLuk0509';
 const ACCOUNTS_KEY = 'fc_accounts';
 const CUR_KEY = 'fc_current_user';
 const SAVE_PREFIX = 'fc_save_';
-const APP_VERSION = 'v24';
+const APP_VERSION = 'v25';
 const VER_KEY = 'fc_ver';
 
 function checkAppVersion() {
@@ -35,7 +35,12 @@ function checkAppVersion() {
       localStorage.removeItem(REG_KEY);
       localStorage.removeItem('fc_bc_id');
       localStorage.removeItem(VER_KEY);
-      try { const a = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}'); for (const n of Object.keys(a)) localStorage.removeItem(SAVE_PREFIX + n); } catch (e) {}
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && k.indexOf(SAVE_PREFIX) === 0) localStorage.removeItem(k);
+        }
+      } catch (e) {}
     }
     localStorage.setItem(VER_KEY, APP_VERSION);
   } catch (e) {}

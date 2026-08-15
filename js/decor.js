@@ -436,7 +436,8 @@ function fieldCardsPolys(f, cards, color, cam, labels) {
     const x = f.x0 + s.x * FIELD_W;
     const z = f.z1 - s.z * FIELD_D;
     const p = s.p;
-    polys.push(...card3DPolys(cam, x, z, rarityColor(p.rarity), p.flag, p.name, p.rating, 0, faceExtra(p)));
+    const facing = Math.atan2(cam.x - x, cam.z - z);
+    polys.push(...card3DPolys(cam, x, z, rarityColor(p.rarity), p.flag, p.name, p.rating, facing, faceExtra(p)));
   }
   return polys;
 }

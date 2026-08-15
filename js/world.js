@@ -148,8 +148,12 @@ wcanvas.addEventListener('click', e => {
   }
 });
 function resizeWorld() {
-  W = wcanvas.width = window.innerWidth;
-  H = wcanvas.height = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  wcanvas.width = Math.round(W * dpr);
+  wcanvas.height = Math.round(H * dpr);
+  wc.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', () => { if (activeScreen === 'world') resizeWorld(); });
 
@@ -385,7 +389,7 @@ function boxPolys(o, cam) {
     const cx = (d.pts[0][0] + d.pts[2][0]) / 2;
     const cy = (d.pts[0][1] + d.pts[2][1]) / 2;
     const cz = (d.pts[0][2] + d.pts[2][2]) / 2;
-    if (d.n.x * (cam.x - cx) + d.n.y * (cam.y - cy) + d.n.z * (cam.z - cz) <= 0) continue;
+    if (d.n.y !== 1 && d.n.x * (cam.x - cx) + d.n.y * (cam.y - cy) + d.n.z * (cam.z - cz) <= 0) continue;
     const ld = Math.max(0, d.n.x * lx + d.n.y * ly + d.n.z * lz);
     const f = d.br * (0.6 + 0.4 * ld);
     const proj = d.pts.map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
@@ -501,9 +505,21 @@ function renderWorld() {
   const flatPolys = polys.filter(p => p.flat);
   const sortedPolys = polys.filter(p => !p.flat).sort((a, b) => b.depth - a.depth);
   for (const poly of flatPolys) drawPoly(poly);
+  drawGroundDots(cam);
+  drawGrass(cam);
   for (const poly of sortedPolys) drawPoly(poly);
+  for (const t of TREES) {
+    const dx = t.x - cam.x, dz = t.z - cam.z;
+    if (dx * dx + dz * dz > 4900) continue;
+    for (const p of treePolys(t, cam)) drawPoly(p);
+  }
   rounds.sort((a, b) => b.depth - a.depth);
   for (const rd of rounds) rd.draw();
+  for (const t of TREES) {
+    const dx = t.x - cam.x, dz = t.z - cam.z;
+    if (dx * dx + dz * dz > 4900) continue;
+    treeCanopy(t, cam);
+  }
   drawFog(cam);
   for (const base of nearBases) drawWorldRoulette(cam, base);
   drawDecorLabels(cam, labels);

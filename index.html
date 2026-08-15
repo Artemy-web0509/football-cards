@@ -8,7 +8,7 @@
 // Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
 (function () {
   try {
-    var V = 'v25';
+    var V = 'v26';
     var prev = localStorage.getItem('fc_ver');
     if (prev !== V) {
       localStorage.removeItem('fc_registry');
@@ -18,13 +18,14 @@
         var a = JSON.parse(localStorage.getItem('fc_accounts') || '{}');
         for (var n in a) localStorage.removeItem('fc_save_' + n);
       } catch (e) {}
+      try { localStorage.setItem('fc_reset_cloud', '1'); } catch (e) {}
       localStorage.setItem('fc_ver', V);
       location.reload();
     }
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
 
@@ -310,24 +311,24 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=25"></script>
-<script src="js/data.js?v=25"></script>
-<script src="js/util.js?v=25"></script>
-<script src="js/auth.js?v=25"></script>
-<script src="js/state.js?v=25"></script>
-<script src="js/economy.js?v=25"></script>
-<script src="js/cards.js?v=25"></script>
-<script src="js/ui.js?v=25"></script>
-<script src="js/world.js?v=25"></script>
-<script src="js/roster.js?v=25"></script>
-<script src="js/screens.js?v=25"></script>
-<script src="js/market.js?v=25"></script>
-<script src="js/match.js?v=25"></script>
-<script src="js/decor.js?v=25"></script>
-<script src="js/net.js?v=25"></script>
-<script src="js/admin.js?v=25"></script>
-<script src="js/touch.js?v=25"></script>
-<script src="js/misc.js?v=25"></script>
-<script src="js/main.js?v=25"></script>
+<script src="js/supabase.js?v=26"></script>
+<script src="js/data.js?v=26"></script>
+<script src="js/util.js?v=26"></script>
+<script src="js/auth.js?v=26"></script>
+<script src="js/state.js?v=26"></script>
+<script src="js/economy.js?v=26"></script>
+<script src="js/cards.js?v=26"></script>
+<script src="js/ui.js?v=26"></script>
+<script src="js/world.js?v=26"></script>
+<script src="js/roster.js?v=26"></script>
+<script src="js/screens.js?v=26"></script>
+<script src="js/market.js?v=26"></script>
+<script src="js/match.js?v=26"></script>
+<script src="js/decor.js?v=26"></script>
+<script src="js/net.js?v=26"></script>
+<script src="js/admin.js?v=26"></script>
+<script src="js/touch.js?v=26"></script>
+<script src="js/misc.js?v=26"></script>
+<script src="js/main.js?v=26"></script>
 </body>
 </html>

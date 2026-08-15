@@ -76,7 +76,7 @@ function init() {
   if (saved && (getAccounts()[saved] || saved === ADMIN_NICK)) {
     currentUser = saved;
     isAdmin = saved === ADMIN_NICK;
-    load().then(st => {
+    cloudResetIfNeeded().then(() => load()).then(st => {
       state = st || defaultState();
       idCounter = state.nextId || 0;
       applyOfflineIncome();

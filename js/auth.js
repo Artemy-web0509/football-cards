@@ -60,6 +60,7 @@ async function login() {
     isAdmin = true;
     currentUser = nick;
     localStorage.setItem(CUR_KEY, nick);
+    await cloudResetIfNeeded();
     state = await load() || defaultState();
     idCounter = state.nextId || 0;
     applyOfflineIncome();
@@ -77,6 +78,7 @@ async function login() {
     isAdmin = false;
     currentUser = nick;
     localStorage.setItem(CUR_KEY, nick);
+    await cloudResetIfNeeded();
     state = await load() || defaultState();
     idCounter = state.nextId || 0;
     applyOfflineIncome();
@@ -101,6 +103,7 @@ async function login() {
   isAdmin = false;
   currentUser = nick;
   localStorage.setItem(CUR_KEY, nick);
+  await cloudResetIfNeeded();
   state = await load() || defaultState();
   idCounter = state.nextId || 0;
   applyOfflineIncome();

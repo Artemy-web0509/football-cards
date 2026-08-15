@@ -25,8 +25,9 @@ const ADMIN_PASS = 'ArtikartLuk0509';
 const ACCOUNTS_KEY = 'fc_accounts';
 const CUR_KEY = 'fc_current_user';
 const SAVE_PREFIX = 'fc_save_';
-const APP_VERSION = 'v25';
+const APP_VERSION = 'v26';
 const VER_KEY = 'fc_ver';
+const CLOUD_RESET_KEY = 'fc_reset_cloud';
 
 function checkAppVersion() {
   try {
@@ -41,9 +42,22 @@ function checkAppVersion() {
           if (k && k.indexOf(SAVE_PREFIX) === 0) localStorage.removeItem(k);
         }
       } catch (e) {}
+      try { localStorage.setItem(CLOUD_RESET_KEY, '1'); } catch (e) {}
     }
     localStorage.setItem(VER_KEY, APP_VERSION);
   } catch (e) {}
+}
+
+function cloudResetIfNeeded() {
+  if (localStorage.getItem(CLOUD_RESET_KEY) !== '1') return Promise.resolve();
+  try { localStorage.removeItem(CLOUD_RESET_KEY); } catch (e) {}
+  if (!currentUser || !SB_READY) return Promise.resolve();
+  const jobs = [
+    sb.from('saves').delete().eq('nick', currentUser),
+    sb.from('positions').delete().eq('nick', currentUser),
+    sb.from('cards').delete().eq('owner', currentUser),
+  ];
+  return Promise.all(jobs.map(j => Promise.resolve(j).catch(() => {}))).then(() => {});
 }
 
 function getPlayer(id) { return state.players.find(p => p.id === id) || transient[id] || null; }

@@ -283,7 +283,7 @@ function roadPolys(r, cam) {
 
 function drawFigures(cam, labels) {
   const skin = '#f2c99c';
-  const drawOne = (px, pz, facing, c, nick, isMe) => {
+  const drawOne = (px, pz, facing, c, nick, isMe, showLabel) => {
     const bob = 0;
     const sh = project(cam, px, 0.02, pz);
     if (sh) {
@@ -329,10 +329,15 @@ function drawFigures(cam, labels) {
     block(0, -3.17 * U - bobPx, 1.22 * U, 0.26 * U, shade(skin, 0.55));
     wc.restore();
     if (isMe) labels.push({ text: nick, wx: px, wy: 3.55 + bob, wz: pz, color: c, size: 13, mine: true });
+    else if (showLabel) labels.push({ text: nick, wx: px, wy: 3.55 + bob, wz: pz, color: c, size: 12 });
   };
   const wf = state.world.facing != null ? state.world.facing : state.world.yaw;
   drawOne(state.world.x, state.world.z, wf, playerColor(currentUser), currentUser, true);
   for (const rp of effectiveServerPlayers()) drawOne(rp.x, rp.z, rp.yaw != null ? rp.yaw : 0, rp.color || '#ffffff', rp.nick, false);
+  for (const st of (typeof STARS !== 'undefined' ? STARS : [])) {
+    const yaw = st.yaw != null ? st.yaw : 0;
+    drawOne(st.x, st.z, yaw, st.color, st.nick, false, true);
+  }
 }
 
 function drawClouds(cam) {

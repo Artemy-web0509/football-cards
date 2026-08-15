@@ -114,68 +114,6 @@ const ROADS = [
 const CLOUDS = [];
 for (let i = 0; i < 9; i++) CLOUDS.push({ nx: Math.random(), ny: 0.08 + Math.random() * 0.28, s: 0.5 + Math.random() * 0.8 });
 
-// ---------- Звёзды футбола: боты, гуляющие по миру ----------
-const STAR_PLAYERS = [
-  { nick: 'Роналдо',  color: '#e64a2e' },
-  { nick: 'Месси',    color: '#3fa9f5' },
-  { nick: 'Неймар',   color: '#f7c948' },
-  { nick: 'Мбаппе',   color: '#7f5af0' },
-  { nick: 'Холанд',   color: '#2ecc71' },
-  { nick: 'Бензема',  color: '#f06a6a' },
-  { nick: 'Модрич',   color: '#f5a623' },
-  { nick: 'Салах',    color: '#e74c3c' },
-  { nick: 'Лева',     color: '#8e44ad' },
-  { nick: 'Златан',   color: '#1abc9c' },
-  { nick: 'Де Брюйне', color: '#34495e' },
-  { nick: 'Килиани',  color: '#2980b9' },
-];
-function initStars() {
-  const stars = [];
-  for (const s of STAR_PLAYERS) {
-    let tries = 0, x, z;
-    do {
-      tries++;
-      const b = BASES[Math.floor(Math.random() * BASES.length)];
-      x = b.x + (Math.random() - 0.5) * 14;
-      z = b.z + FIELD_GAP + (Math.random() < 0.4 ? FIELD_D / 2 + (Math.random() - 0.5) * 6 : (Math.random() - 0.5) * 18);
-      if (tries > 300) break;
-    } while (worldCollides(x, z));
-    stars.push({ nick: s.nick, color: s.color, x, z, tx: x, tz: z, speed: 2.2 + Math.random() * 1.6, wait: 0, t: 0 });
-  }
-  return stars;
-}
-const STARS = initStars();
-function updateStars(dt) {
-  for (const st of STARS) {
-    st.t += dt;
-    if (st.wait > 0) { st.wait -= dt; continue; }
-    const dx = st.tx - st.x, dz = st.tz - st.z;
-    const d = Math.hypot(dx, dz);
-    if (d > 0.4) {
-      const nx = st.x + (dx / d) * st.speed * dt;
-      const nz = st.z + (dz / d) * st.speed * dt;
-      if (!worldCollides(nx, nz)) { st.x = nx; st.z = nz; }
-      else { starPickTarget(st); }
-    } else {
-      starPickTarget(st);
-    }
-  }
-}
-function starPickTarget(st) {
-  const spots = [];
-  for (const b of BASES) {
-    spots.push({ x: b.x + (Math.random() - 0.5) * 8, z: b.z + FIELD_GAP + FIELD_D / 2 + (Math.random() - 0.5) * 8 });
-    const sp = spinnerPosFor(b);
-    spots.push({ x: sp.x + (Math.random() - 0.5) * 3, z: sp.z + (Math.random() - 0.5) * 3 });
-  }
-  spots.push({ x: ARENA.x + (Math.random() - 0.5) * ARENA.size * 0.5, z: ARENA.z + (Math.random() - 0.5) * ARENA.size * 0.5 });
-  spots.push({ x: MARKET.x + (Math.random() - 0.5) * 8, z: MARKET.z + (Math.random() - 0.5) * 8 });
-  const p = spots[Math.floor(Math.random() * spots.length)];
-  st.tx = p.x; st.tz = p.z;
-  st.wait = 0.4 + Math.random() * 2.2;
-}
-STARS.forEach(st => starPickTarget(st));
-
 const keys = {};
 document.addEventListener('keydown', e => {
   keys[e.code] = true;
@@ -275,7 +213,6 @@ function worldCollides(x, z) {
 }
 
 function updateWorld(dt) {
-  updateStars(dt);
   const p = state.world;
   const sp = 9;
   let mx = 0, mz = 0;

@@ -334,10 +334,6 @@ function drawFigures(cam, labels) {
   const wf = state.world.facing != null ? state.world.facing : state.world.yaw;
   drawOne(state.world.x, state.world.z, wf, playerColor(currentUser), currentUser, true);
   for (const rp of effectiveServerPlayers()) drawOne(rp.x, rp.z, rp.yaw != null ? rp.yaw : 0, rp.color || '#ffffff', rp.nick, false);
-  for (const st of (typeof STARS !== 'undefined' ? STARS : [])) {
-    const yaw = st.yaw != null ? st.yaw : 0;
-    drawOne(st.x, st.z, yaw, st.color, st.nick, false, true);
-  }
 }
 
 function drawClouds(cam) {

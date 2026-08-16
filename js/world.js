@@ -148,7 +148,7 @@ wcanvas.addEventListener('click', e => {
   }
 });
 function resizeWorld() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.max(2, window.devicePixelRatio || 1);
   W = window.innerWidth;
   H = window.innerHeight;
   wcanvas.width = Math.round(W * dpr);
@@ -502,24 +502,13 @@ function renderWorld() {
   polys.push(...heldCardPolys(cam, labels));
   if (state.held) drawHeldSlotMarkers(cam);
   pushRound(0.1, () => drawFigures(cam, labels));
+  polys.push(...drawPlayerFence(cam));
   const flatPolys = polys.filter(p => p.flat);
   const sortedPolys = polys.filter(p => !p.flat).sort((a, b) => b.depth - a.depth);
   for (const poly of flatPolys) drawPoly(poly);
-  drawGroundDots(cam);
-  drawGrass(cam);
   for (const poly of sortedPolys) drawPoly(poly);
-  for (const t of TREES) {
-    const dx = t.x - cam.x, dz = t.z - cam.z;
-    if (dx * dx + dz * dz > 4900) continue;
-    for (const p of treePolys(t, cam)) drawPoly(p);
-  }
   rounds.sort((a, b) => b.depth - a.depth);
   for (const rd of rounds) rd.draw();
-  for (const t of TREES) {
-    const dx = t.x - cam.x, dz = t.z - cam.z;
-    if (dx * dx + dz * dz > 4900) continue;
-    treeCanopy(t, cam);
-  }
   drawFog(cam);
   for (const base of nearBases) drawWorldRoulette(cam, base);
   drawDecorLabels(cam, labels);

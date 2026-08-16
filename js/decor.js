@@ -111,13 +111,14 @@ function billboardPolys(cx, cy, cz, w, h, color, cam, facing) {
     rx = Math.cos(facing); rz = -Math.sin(facing);
   }
   const hw = w / 2, hh = h / 2;
-  const pts = [
+  const wp = [
     [cx + rx * hw, cy + hh, cz + rz * hw],
     [cx - rx * hw, cy + hh, cz - rz * hw],
     [cx - rx * hw, cy - hh, cz - rz * hw],
     [cx + rx * hw, cy - hh, cz + rz * hw],
-  ].map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
-  if (pts.length < 3) return [];
+  ];
+  const pts = projectPoly(cam, wp);
+  if (!pts) return [];
   const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
   return [{ pts: pts.map(p => ({ x: p.x, y: p.y })), color, depth, line: false }];
 }
@@ -159,6 +160,34 @@ function drawDisc(cam, x, y, z, r, color) {
   wc.fillStyle = color;
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.fill();
 }
+// Деревянный забор вокруг игрока (всегда возле себя)
+function drawPlayerFence(cam) {
+  const p = state.world;
+  const R = 13, N = 20;
+  const wood = '#c8a15c', dark = '#9c7236';
+  const polys = [];
+  const nearZR = 3.5;
+  const zrAt = (cx, cz) => (cx - cam.x) * cam.sin + (cz - cam.z) * cam.cos;
+  for (let i = 0; i < N; i++) {
+    const am = (i / N) * Math.PI * 2;
+    const cx = p.x + Math.cos(am) * R;
+    const cz = p.z + Math.sin(am) * R;
+    if (zrAt(cx, cz) < nearZR) continue;
+    polys.push(...billboardPolys(cx, 0.85, cz, 0.38, 1.5, dark, cam));
+  }
+  for (let i = 0; i < N; i++) {
+    const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2;
+    const am = (a0 + a1) / 2;
+    const cx = p.x + Math.cos(am) * R;
+    const cz = p.z + Math.sin(am) * R;
+    if (zrAt(cx, cz) < nearZR) continue;
+    const seg = R * (a1 - a0);
+    polys.push(...billboardPolys(cx, 0.55, cz, seg, 0.34, shade(wood, 0.8), cam, am + Math.PI / 2));
+    polys.push(...billboardPolys(cx, 1.18, cz, seg, 0.34, wood, cam, am + Math.PI / 2));
+  }
+  return polys;
+}
+
 function drawRing(cam, x, y, z, r, color, width) {
   const p = project(cam, x, y, z);
   if (!p) return;

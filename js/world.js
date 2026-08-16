@@ -340,6 +340,7 @@ function shade(hex, f) {
 
 function drawPoly(poly) {
   if (poly.pts.length < 3) return;
+  if (polyOffscreen(poly.pts)) return;
   if (poly.thin) {
     const p = poly.pts, n = p.length;
     let best = -1, bi = -1;
@@ -355,10 +356,10 @@ function drawPoly(poly) {
     const thickness = Math.hypot(mx1 - mx2, my1 - my2);
     wc.strokeStyle = poly.color;
     wc.lineWidth = Math.max(3.6, thickness);
-    wc.lineCap = 'butt';
+    wc.lineCap = 'round';
     wc.beginPath();
-    wc.moveTo(mx1, my1);
-    wc.lineTo(mx2, my2);
+    wc.moveTo(Math.round(mx1), Math.round(my1));
+    wc.lineTo(Math.round(mx2), Math.round(my2));
     wc.stroke();
     return;
   }
@@ -392,8 +393,8 @@ function boxPolys(o, cam) {
     if (d.n.y !== 1 && d.n.x * (cam.x - cx) + d.n.y * (cam.y - cy) + d.n.z * (cam.z - cz) <= 0) continue;
     const ld = Math.max(0, d.n.x * lx + d.n.y * ly + d.n.z * lz);
     const f = d.br * (0.6 + 0.4 * ld);
-    const proj = d.pts.map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
-    if (proj.length >= 3) {
+    const proj = projectPoly(cam, d.pts);
+    if (proj) {
       polys.push({ pts: proj.map(p => ({ x: p.x, y: p.y })), color: shade(o.color, f), depth: md, line: false });
     }
   }
@@ -492,6 +493,7 @@ function renderWorld() {
   BASES.forEach((base, i) => {
     nearBases.push(base);
     polys.push(...fieldPolys(base, cam, i === myHome));
+    polys.push(...fieldFencePolys(base, cam));
     pushRound(distToCam(base.x, base.z), () => fieldCenterRing(base, cam));
     polys.push(...fieldOwnerPolys(base, i, cam, labels));    polys.push(...spinnerPolys(base, cam));
     if (i === myHome) polys.push(...homeFlagPolys(base, cam, labels));
@@ -502,7 +504,6 @@ function renderWorld() {
   polys.push(...heldCardPolys(cam, labels));
   if (state.held) drawHeldSlotMarkers(cam);
   pushRound(0.1, () => drawFigures(cam, labels));
-  polys.push(...drawPlayerFence(cam));
   const flatPolys = polys.filter(p => p.flat);
   const sortedPolys = polys.filter(p => !p.flat).sort((a, b) => b.depth - a.depth);
   for (const poly of flatPolys) drawPoly(poly);

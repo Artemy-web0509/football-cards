@@ -49,6 +49,50 @@ function wallPolys(cam) {
   return polys;
 }
 
+// Забор вокруг футбольного поля (виден рядом с игроком)
+function fieldFencePolys(base, cam) {
+  if (distToCam(base.x, base.z) > 130) return [];
+  const polys = [];
+  const f = fieldRectFor(base);
+  const m = 2.4;                     // отступ от кромки поля
+  const x0 = f.x0 - m, x1 = f.x1 + m, z0 = f.z0 - m, z1 = f.z1 + m;
+  const wood = '#f0ece0';
+  const vectors = [
+    { x: (x0 + x1) / 2, z: z0, w: x1 - x0, d: 0.34, h: 1.25 },
+    { x: (x0 + x1) / 2, z: z1, w: x1 - x0, d: 0.34, h: 1.25 },
+    { x: x0, z: (z0 + z1) / 2, w: 0.34, d: z1 - z0, h: 1.25 },
+    { x: x1, z: (z0 + z1) / 2, w: 0.34, d: z1 - z0, h: 1.25 },
+  ];
+  for (const v of vectors) {
+    const camDistSq = (v.x - cam.x) * (v.x - cam.x) + (v.z - cam.z) * (v.z - cam.z);
+    if (camDistSq < 9) continue;
+    polys.push(...boxPolys({ ...v, color: wood }, cam));
+  }
+  const pc = '#ffffff';
+  for (const [cx, cz] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1]]) {
+    const camDistSq = (cx - cam.x) * (cx - cam.x) + (cz - cam.z) * (cz - cam.z);
+    if (camDistSq < 9) continue;
+    polys.push(...boxPolys({ x: cx, z: cz, w: 0.5, d: 0.5, h: 1.7, color: pc }, cam));
+  }
+  return polys;
+}
+
+// Отсечение полигона по экрану: если все точки за заметным запасом за краями — пропустить.
+function polyOffscreen(pts) {
+  const pad = 300;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const q = pts[i];
+    if (q.x < minX) minX = q.x;
+    if (q.x > maxX) maxX = q.x;
+    if (q.y < minY) minY = q.y;
+    if (q.y > maxY) maxY = q.y;
+    if (maxX > -pad && minX < W + pad && maxY > -pad && minY < H + pad) return false;
+  }
+  return maxX < -pad || minX > W + pad || maxY < -pad || minY > H + pad;
+}
+
 function fieldPolys(base, cam, isHome) {
   const f = fieldRectFor(base);
   const polys = [];
@@ -159,33 +203,6 @@ function drawDisc(cam, x, y, z, r, color) {
   const rr = Math.max(1.5, r * p.scale);
   wc.fillStyle = color;
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.fill();
-}
-// Деревянный забор вокруг игрока (всегда возле себя)
-function drawPlayerFence(cam) {
-  const p = state.world;
-  const R = 13, N = 20;
-  const wood = '#c8a15c', dark = '#9c7236';
-  const polys = [];
-  const nearZR = 3.5;
-  const zrAt = (cx, cz) => (cx - cam.x) * cam.sin + (cz - cam.z) * cam.cos;
-  for (let i = 0; i < N; i++) {
-    const am = (i / N) * Math.PI * 2;
-    const cx = p.x + Math.cos(am) * R;
-    const cz = p.z + Math.sin(am) * R;
-    if (zrAt(cx, cz) < nearZR) continue;
-    polys.push(...billboardPolys(cx, 0.85, cz, 0.38, 1.5, dark, cam));
-  }
-  for (let i = 0; i < N; i++) {
-    const a0 = (i / N) * Math.PI * 2, a1 = ((i + 1) / N) * Math.PI * 2;
-    const am = (a0 + a1) / 2;
-    const cx = p.x + Math.cos(am) * R;
-    const cz = p.z + Math.sin(am) * R;
-    if (zrAt(cx, cz) < nearZR) continue;
-    const seg = R * (a1 - a0);
-    polys.push(...billboardPolys(cx, 0.55, cz, seg, 0.34, shade(wood, 0.8), cam, am + Math.PI / 2));
-    polys.push(...billboardPolys(cx, 1.18, cz, seg, 0.34, wood, cam, am + Math.PI / 2));
-  }
-  return polys;
 }
 
 function drawRing(cam, x, y, z, r, color, width) {

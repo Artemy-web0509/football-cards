@@ -68,7 +68,7 @@ function bindTouchControls() {
       ev.preventDefault();
       try { moveZone.setPointerCapture(ev.pointerId); } catch (e) {}
       const r = moveStick.getBoundingClientRect();
-      joyMove = { id: ev.pointerId, ox: r.left + r.width / 2, oy: r.top + r.height / 2, cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+      joyMove = { id: ev.pointerId, ox: r.left + r.width / 2, oy: r.top + r.height / 2, cx: r.left + r.width / 2, cy: r.top + r.height / 2, t0: performance.now(), moved: false };
       moveKnob.classList.add('active');
       updateMoveKnob(moveKnob);
     });
@@ -76,12 +76,16 @@ function bindTouchControls() {
       if (!joyMove || ev.pointerId !== joyMove.id) return;
       ev.preventDefault();
       joyMove.cx = ev.clientX; joyMove.cy = ev.clientY;
+      const dx = joyMove.cx - joyMove.ox, dy = joyMove.cy - joyMove.oy;
+      if (Math.hypot(dx, dy) > 6) joyMove.moved = true;
       updateMoveKnob(moveKnob);
     });
     const endMove = ev => {
       if (!joyMove || ev.pointerId !== joyMove.id) return;
+      const shortTap = !joyMove.moved && (performance.now() - joyMove.t0) < 300;
       joyMove = null;
       if (moveKnob) { moveKnob.classList.remove('active'); updateMoveKnob(moveKnob); }
+      if (shortTap && activeScreen === 'world') tryEnter();
     };
     moveZone.addEventListener('pointerup', endMove);
     moveZone.addEventListener('pointercancel', endMove);

@@ -340,9 +340,11 @@ function shade(hex, f) {
 
 function drawPoly(poly) {
   if (poly.pts.length < 3) return;
-  if (polyOffscreen(poly.pts)) return;
+  const clipped = clipToScreen(poly.pts);
+  if (clipped.length < 3) return;
   if (poly.thin) {
-    const p = poly.pts, n = p.length;
+    if (clipped.length < 4) return;
+    const p = clipped, n = p.length;
     let best = -1, bi = -1;
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
@@ -358,14 +360,14 @@ function drawPoly(poly) {
     wc.lineWidth = Math.max(3.6, thickness);
     wc.lineCap = 'round';
     wc.beginPath();
-    wc.moveTo(Math.round(mx1), Math.round(my1));
-    wc.lineTo(Math.round(mx2), Math.round(my2));
+    wc.moveTo(mx1, my1);
+    wc.lineTo(mx2, my2);
     wc.stroke();
     return;
   }
   wc.beginPath();
-  wc.moveTo(poly.pts[0].x, poly.pts[0].y);
-  for (let i = 1; i < poly.pts.length; i++) wc.lineTo(poly.pts[i].x, poly.pts[i].y);
+  wc.moveTo(clipped[0].x, clipped[0].y);
+  for (let i = 1; i < clipped.length; i++) wc.lineTo(clipped[i].x, clipped[i].y);
   wc.closePath();
   wc.fillStyle = poly.color;
   wc.fill();

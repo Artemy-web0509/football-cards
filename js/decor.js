@@ -93,6 +93,45 @@ function polyOffscreen(pts) {
   return maxX < -pad || minX > W + pad || maxY < -pad || minY > H + pad;
 }
 
+// Обрезка полигона к экрану (Сазерленд-Ходжман) — убирает гигантские треугольники у near-плоскости.
+function clipToScreen(pts) {
+  const pad = 64;
+  const x0 = -pad, x1 = W + pad, y0 = -pad, y1 = H + pad;
+  // Быстрая проверка: если весь полигон внутри экрана — вернуть как есть (без копирования).
+  let minX = pts[0].x, minY = pts[0].y, maxX = pts[0].x, maxY = pts[0].y;
+  for (const q of pts) {
+    if (q.x < minX) minX = q.x;
+    if (q.x > maxX) maxX = q.x;
+    if (q.y < minY) minY = q.y;
+    if (q.y > maxY) maxY = q.y;
+  }
+  if (minX >= x0 && maxX <= x1 && minY >= y0 && maxY <= y1) return pts;
+  let out = pts;
+  const clip = (list, axis, border) => {
+    if (!list.length) return [];
+    const res = [];
+    const n = list.length;
+    let a = list[n - 1];
+    let ain = axis === 'x' ? (border === 1 ? a.x <= x1 : a.x >= x0) : (border === 1 ? a.y <= y1 : a.y >= y0);
+    for (let i = 0; i < n; i++) {
+      const b = list[i];
+      const bin = axis === 'x' ? (border === 1 ? b.x <= x1 : b.x >= x0) : (border === 1 ? b.y <= y1 : b.y >= y0);
+      if (bin !== ain) {
+        const t = axis === 'x'
+          ? (border === 1 ? (x1 - a.x) / (b.x - a.x) : (x0 - a.x) / (b.x - a.x))
+          : (border === 1 ? (y1 - a.y) / (b.y - a.y) : (y0 - a.y) / (b.y - a.y));
+        res.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      }
+      if (bin) res.push(b);
+      a = b; ain = bin;
+    }
+    return res;
+  };
+  out = clip(out, 'x', 0); out = clip(out, 'x', 1);
+  out = clip(out, 'y', 0); out = clip(out, 'y', 1);
+  return out;
+}
+
 function fieldPolys(base, cam, isHome) {
   const f = fieldRectFor(base);
   const polys = [];

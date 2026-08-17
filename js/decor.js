@@ -49,18 +49,17 @@ function wallPolys(cam) {
   return polys;
 }
 
-// Забор вокруг футбольного поля. Плоские полосы на земле — квадрат виден целиком.
+// Забор вокруг футбольного поля: объёмные стойки (видимы на любой дистанции).
 function fieldFencePolys(base, cam) {
   const polys = [];
   const f = fieldRectFor(base);
-  const m = 2.4;                     // отступ от кромки поля
+  const m = 2.6;
   const x0 = f.x0 - m, x1 = f.x1 + m, z0 = f.z0 - m, z1 = f.z1 + m;
-  const wood = '#f0ece0';
-  const line = (a, b, c, d, col) => { const g = groundPoly(cam, a, b, c, d, 0.055, col, true); if (g) polys.push(g); };
-  line(x0, z0, x1, z0, wood);
-  line(x0, z1, x1, z1, wood);
-  line(x0, z0, x0, z1, wood);
-  line(x1, z0, x1, z1, wood);
+  const wood = '#efe6d6';
+  const h = 1.3, t = 0.34, step = 3.4;
+  const addPost = (x, z) => { polys.push(...boxPolys({ x, z, w: t, d: t, h, color: wood }, cam)); };
+  for (let x = x0; x <= x1; x += step) { addPost(x, z0); addPost(x, z1); }
+  for (let z = z0; z <= z1; z += step) { addPost(x0, z); addPost(x1, z); }
   return polys;
 }
 

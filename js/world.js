@@ -175,34 +175,49 @@ function project(cam, wx, wy, wz) {
 }
 
 function projectPoly(cam, wp) {
-  const near = 0.15;
-  const focal = (H / 2) / Math.tan(FOV / 2);
-  const clip = [];
-  for (let i = 0; i < wp.length; i++) {
-    const a = wp[i], b = wp[(i + 1) % wp.length];
-    const azr = (a[0] - cam.x) * cam.sin + (a[2] - cam.z) * cam.cos;
-    const bzr = (b[0] - cam.x) * cam.sin + (b[2] - cam.z) * cam.cos;
-    const aIn = azr >= near, bIn = bzr >= near;
-    if (aIn && bIn) clip.push(b);
-    else if (aIn && !bIn) {
-      const t = (near - azr) / (bzr - azr);
-      clip.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
-    } else if (!aIn && bIn) {
-      const t = (near - azr) / (bzr - azr);
-      clip.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
-      clip.push(b);
+  const near = 0.15, tanF = Math.tan(FOV / 2);
+  const focal = (H / 2) / tanF;
+
+  // Отсечение выпуклого полигона плоскостями фрустума в мировых координатах.
+  // Полуплоскость: f <= 0 -> внутри.
+  const planes = [
+    // near:  zr >= near
+    p => near - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos),
+    // left:  xr + zr*tanF >= 0
+    p => -(((p[0] - cam.x) * cam.cos - (p[2] - cam.z) * cam.sin) + ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF),
+    // right: xr - zr*tanF <= 0
+    p => ((p[0] - cam.x) * cam.cos - (p[2] - cam.z) * cam.sin) - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF,
+    // top:   yr - zr*tanF <= 0
+    p => (p[1] - cam.y) - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF,
+    // bottom:-yr - zr*tanF <= 0
+    p => -(p[1] - cam.y) - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF,
+  ];
+  let pts = wp;
+  for (const f of planes) {
+    const inside = v => f(v) <= 0;
+    const out = [];
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      const fa = f(a), fb = f(b);
+      const aIn = fa <= 0, bIn = fb <= 0;
+      if (aIn !== bIn) {
+        const t = fa / (fa - fb);
+        out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]);
+      }
+      if (bIn) out.push(b);
     }
+    pts = out;
+    if (pts.length < 3) return null;
   }
-  if (clip.length < 3) return null;
-  const out = [];
-  for (const p of clip) {
+  const outPts = [];
+  for (const p of pts) {
     const dx = p[0] - cam.x, dy = p[1] - cam.y, dz = p[2] - cam.z;
     const xr = dx * cam.cos - dz * cam.sin;
     const zr = dx * cam.sin + dz * cam.cos;
-    if (zr < near) continue;
-    out.push({ x: W / 2 + xr * (focal / zr), y: H / 2 - dy * (focal / zr), z: zr });
+    outPts.push({ x: W / 2 + xr * (focal / zr), y: H / 2 - dy * (focal / zr), z: zr });
   }
-  return out.length >= 3 ? out : null;
+  return outPts.length >= 3 ? outPts : null;
 }
 
 function worldCollides(x, z) {

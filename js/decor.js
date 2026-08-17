@@ -222,7 +222,7 @@ function slotPositions(cards) {
 function drawRoundBillboard(cam, x, y, z, r, color) {
   const p = project(cam, x, y, z);
   if (!p) return;
-  const rr = Math.max(1.5, r * p.scale);
+  const rr = Math.min(Math.max(1.5, r * p.scale), 420);
   wc.fillStyle = shade(color, 1.15);
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.fill();
   wc.fillStyle = shade(color, 0.7);
@@ -239,7 +239,7 @@ function pushRound(depth, draw) {
 function drawDisc(cam, x, y, z, r, color) {
   const p = project(cam, x, y, z);
   if (!p) return;
-  const rr = Math.max(1.5, r * p.scale);
+  const rr = Math.min(Math.max(1.5, r * p.scale), 420);
   wc.fillStyle = color;
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.fill();
 }
@@ -247,7 +247,7 @@ function drawDisc(cam, x, y, z, r, color) {
 function drawRing(cam, x, y, z, r, color, width) {
   const p = project(cam, x, y, z);
   if (!p) return;
-  const rr = Math.max(2, r * p.scale);
+  const rr = Math.min(Math.max(2, r * p.scale), 420);
   wc.strokeStyle = color;
   wc.lineWidth = width || 1.5;
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.stroke();
@@ -374,7 +374,7 @@ function drawFigures(cam, labels) {
     if (sh) {
       wc.fillStyle = 'rgba(0,0,0,0.25)';
       wc.beginPath();
-      wc.ellipse(sh.x, sh.y, 1.5 * sh.scale, 0.5 * sh.scale, 0, 0, Math.PI * 2);
+      wc.ellipse(sh.x, sh.y, Math.min(1.5 * sh.scale, 300), Math.min(0.5 * sh.scale, 100), 0, 0, Math.PI * 2);
       wc.fill();
     }
     const base = project(cam, px, 0, pz);

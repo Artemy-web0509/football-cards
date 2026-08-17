@@ -49,31 +49,18 @@ function wallPolys(cam) {
   return polys;
 }
 
-// Забор вокруг футбольного поля (виден рядом с игроком)
+// Забор вокруг футбольного поля. Плоские полосы на земле — квадрат виден целиком.
 function fieldFencePolys(base, cam) {
-  if (distToCam(base.x, base.z) > 130) return [];
   const polys = [];
   const f = fieldRectFor(base);
   const m = 2.4;                     // отступ от кромки поля
   const x0 = f.x0 - m, x1 = f.x1 + m, z0 = f.z0 - m, z1 = f.z1 + m;
   const wood = '#f0ece0';
-  const vectors = [
-    { x: (x0 + x1) / 2, z: z0, w: x1 - x0, d: 0.34, h: 1.25 },
-    { x: (x0 + x1) / 2, z: z1, w: x1 - x0, d: 0.34, h: 1.25 },
-    { x: x0, z: (z0 + z1) / 2, w: 0.34, d: z1 - z0, h: 1.25 },
-    { x: x1, z: (z0 + z1) / 2, w: 0.34, d: z1 - z0, h: 1.25 },
-  ];
-  for (const v of vectors) {
-    const camDistSq = (v.x - cam.x) * (v.x - cam.x) + (v.z - cam.z) * (v.z - cam.z);
-    if (camDistSq < 9) continue;
-    polys.push(...boxPolys({ ...v, color: wood }, cam));
-  }
-  const pc = '#ffffff';
-  for (const [cx, cz] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1]]) {
-    const camDistSq = (cx - cam.x) * (cx - cam.x) + (cz - cam.z) * (cz - cam.z);
-    if (camDistSq < 9) continue;
-    polys.push(...boxPolys({ x: cx, z: cz, w: 0.5, d: 0.5, h: 1.7, color: pc }, cam));
-  }
+  const line = (a, b, c, d, col) => { const g = groundPoly(cam, a, b, c, d, 0.055, col, true); if (g) polys.push(g); };
+  line(x0, z0, x1, z0, wood);
+  line(x0, z1, x1, z1, wood);
+  line(x0, z0, x0, z1, wood);
+  line(x1, z0, x1, z1, wood);
   return polys;
 }
 
@@ -163,12 +150,34 @@ function fieldPolys(base, cam, isHome) {
   return polys;
 }
 
+// 3D-кольцо на земле (правильный перспективный эллипс) — не «парящий овал».
+function ringPolys(cam, cx, cz, r1, r2, y0, y1, color, n) {
+  const polys = [];
+  const seg = n || 18;
+  const wpts = [];
+  for (let i = 0; i < seg; i++) {
+    const a = i / seg * Math.PI * 2, b = (i + 1) / seg * Math.PI * 2;
+    wpts.push([
+      [cx + Math.cos(a) * r1, y0, cz + Math.sin(a) * r1],
+      [cx + Math.cos(b) * r1, y0, cz + Math.sin(b) * r1],
+      [cx + Math.cos(b) * r2, y1, cz + Math.sin(b) * r2],
+      [cx + Math.cos(a) * r2, y1, cz + Math.sin(a) * r2],
+    ]);
+  }
+  for (const wp of wpts) {
+    const pts = projectPoly(cam, wp);
+    if (!pts) continue;
+    const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+    polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color, depth, line: false, flat: true });
+  }
+  return polys;
+}
+
 function fieldCenterRing(base, cam) {
   const f = fieldRectFor(base);
   const cx = f.x0 + FIELD_W / 2, cz = (f.z0 + f.z1) / 2;
-  if (distToCam(cx, cz) > 150) return;
-  drawRing(cam, cx, 0.05, cz, 4.6, 'rgba(255,255,255,0.85)', 1.5);
-  drawDisc(cam, cx, 0.05, cz, 0.5, 'rgba(255,255,255,0.9)');
+  if (distToCam(cx, cz) > 150) return [];
+  return ringPolys(cam, cx, cz, 4.4, 4.9, 0.05, 0.09, 'rgba(255,255,255,0.85)');
 }
 
 function homeFlagPolys(base, cam, labels) {
@@ -222,7 +231,7 @@ function slotPositions(cards) {
 function drawRoundBillboard(cam, x, y, z, r, color) {
   const p = project(cam, x, y, z);
   if (!p) return;
-  const rr = Math.min(Math.max(1.5, r * p.scale), 420);
+  const rr = Math.min(Math.max(1.5, r * p.scale), 220);
   wc.fillStyle = shade(color, 1.15);
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.fill();
   wc.fillStyle = shade(color, 0.7);
@@ -239,7 +248,7 @@ function pushRound(depth, draw) {
 function drawDisc(cam, x, y, z, r, color) {
   const p = project(cam, x, y, z);
   if (!p) return;
-  const rr = Math.min(Math.max(1.5, r * p.scale), 420);
+  const rr = Math.min(Math.max(1.5, r * p.scale), 220);
   wc.fillStyle = color;
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.fill();
 }
@@ -247,7 +256,7 @@ function drawDisc(cam, x, y, z, r, color) {
 function drawRing(cam, x, y, z, r, color, width) {
   const p = project(cam, x, y, z);
   if (!p) return;
-  const rr = Math.min(Math.max(2, r * p.scale), 420);
+  const rr = Math.min(Math.max(2, r * p.scale), 220);
   wc.strokeStyle = color;
   wc.lineWidth = width || 1.5;
   wc.beginPath(); wc.arc(p.x, p.y, rr, 0, Math.PI * 2); wc.stroke();
@@ -548,27 +557,27 @@ function arenaPolys(cam) {
   line(x1 - 0.5, z0, x1 + 0.5, z1, '#ffffff');
   line(x0, (z0 + z1) / 2 - 0.4, x1, (z0 + z1) / 2 + 0.4, 'rgba(255,255,255,0.7)');
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-  polys.push(...drawArenaRing(cx, cz, cam));
+  polys.push(...arenaRingPolys(cx, cz, cam));
   return polys;
 }
 
-function drawArenaRing(cx, cz, cam) {
-  const polys = [];
+// Проверено-шахматное кольцо вокруг арены как настоящие 3D-полигоны на земле.
+function arenaRingPolys(cx, cz, cam) {
+  const segs = [];
   for (let i = 0; i < 20; i++) {
-    const a = i / 20 * Math.PI * 2;
-    const b = (i + 1) / 20 * Math.PI * 2;
-    const r1 = 5.4, r2 = 6.6;
-    const pts = [
-      [cx + Math.cos(a) * r1, 0.22, cz + Math.sin(a) * r1],
-      [cx + Math.cos(b) * r1, 0.22, cz + Math.sin(b) * r1],
-      [cx + Math.cos(b) * r2, 0.24, cz + Math.sin(b) * r2],
-      [cx + Math.cos(a) * r2, 0.24, cz + Math.sin(a) * r2],
-    ].map(p => project(cam, p[0], p[1], p[2])).filter(Boolean);
-    if (pts.length >= 4) {
-      polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: i % 2 ? '#b3572e' : '#e8b464', line: false, flat: true });
-    }
+    const a = i / 20 * Math.PI * 2, b = (i + 1) / 20 * Math.PI * 2;
+    segs.push([[cx + Math.cos(a) * 5.4, 0.22, cz + Math.sin(a) * 5.4],
+      [cx + Math.cos(b) * 5.4, 0.22, cz + Math.sin(b) * 5.4],
+      [cx + Math.cos(b) * 6.6, 0.24, cz + Math.sin(b) * 6.6],
+      [cx + Math.cos(a) * 6.6, 0.24, cz + Math.sin(a) * 6.6]]);
   }
-  pushRound(distToCam(cx, cz), () => drawRing(cam, cx, 0.26, cz, 4.6, 'rgba(255,255,255,0.7)', 1.4));
+  const polys = [];
+  for (const wp of segs) {
+    const pts = projectPoly(cam, wp);
+    if (!pts) continue;
+    const depth = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+    polys.push({ pts: pts.map(p => ({ x: p.x, y: p.y })), color: '#b3572e', depth, line: false, flat: true });
+  }
   return polys;
 }
 

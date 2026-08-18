@@ -546,17 +546,33 @@ function fieldOwnerPolys(base, idx, cam, labels) {
 function arenaPolys(cam) {
   const a = ARENA_OBJ;
   const x0 = a.x - a.w / 2, x1 = a.x + a.w / 2, z0 = a.z - a.d / 2, z1 = a.z + a.d / 2;
-  const polys = [];
-  const g = groundPoly(cam, x0, z0, x1, z1, 0.2, '#c9a25f');
-  if (g) polys.push(g);
-  const line = (a2, b2, c2, d2, col) => { const gg = groundPoly(cam, a2, b2, c2, d2, 0.3, col, true); if (gg) polys.push(gg); };
-  line(x0 - 0.5, z0 - 0.5, x1 + 0.5, z0 + 0.5, '#ffffff');
-  line(x0 - 0.5, z1 - 0.5, x1 + 0.5, z1 + 0.5, '#ffffff');
-  line(x0 - 0.5, z0, x0 + 0.5, z1, '#ffffff');
-  line(x1 - 0.5, z0, x1 + 0.5, z1, '#ffffff');
-  line(x0, (z0 + z1) / 2 - 0.4, x1, (z0 + z1) / 2 + 0.4, 'rgba(255,255,255,0.7)');
   const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  const polys = [];
+
+  // Приподнятая площадка арены: видимые стены с тенью вместо плоского квадрата на земле.
+  polys.push(...boxPolys({ x: cx, z: cz, w: a.w, d: a.d, h: 0.9, color: '#c9a25f' }, cam));
+
+  const line = (a2, b2, c2, d2, col) => { const gg = groundPoly(cam, a2, b2, c2, d2, 1.02, col, true); if (gg) polys.push(gg); };
+  line(x0 + 0.5, z0 + 0.5, x1 - 0.5, z0 + 1.0, '#ffffff');
+  line(x0 + 0.5, z1 - 1.0, x1 - 0.5, z1 - 0.5, '#ffffff');
+  line(x0 + 0.5, z0, x0 + 1.0, z1, '#ffffff');
+  line(x1 - 1.0, z0, x1 - 0.5, z1, '#ffffff');
+  line(x0 + 0.5, (z0 + z1) / 2 - 0.4, x1 - 0.5, (z0 + z1) / 2 + 0.4, 'rgba(255,255,255,0.7)');
   polys.push(...arenaRingPolys(cx, cz, cam));
+  polys.push(...arenaFencePolys(x0, x1, z0, z1, cam));
+  return polys;
+}
+
+// Забор-стойки по периметру арены — как у футбольных полей.
+function arenaFencePolys(x0, x1, z0, z1, cam) {
+  const polys = [];
+  const m = 2.2;
+  const fx0 = x0 - m, fx1 = x1 + m, fz0 = z0 - m, fz1 = z1 + m;
+  const wood = '#efe6d6';
+  const h = 1.6, t = 0.4, step = 4;
+  const addPost = (x, z) => { polys.push(...boxPolys({ x, z, w: t, d: t, h, color: wood }, cam)); };
+  for (let x = fx0; x <= fx1; x += step) { addPost(x, fz0); addPost(x, fz1); }
+  for (let z = fz0; z <= fz1; z += step) { addPost(fx0, z); addPost(fx1, z); }
   return polys;
 }
 
@@ -565,10 +581,10 @@ function arenaRingPolys(cx, cz, cam) {
   const segs = [];
   for (let i = 0; i < 20; i++) {
     const a = i / 20 * Math.PI * 2, b = (i + 1) / 20 * Math.PI * 2;
-    segs.push([[cx + Math.cos(a) * 5.4, 0.22, cz + Math.sin(a) * 5.4],
-      [cx + Math.cos(b) * 5.4, 0.22, cz + Math.sin(b) * 5.4],
-      [cx + Math.cos(b) * 6.6, 0.24, cz + Math.sin(b) * 6.6],
-      [cx + Math.cos(a) * 6.6, 0.24, cz + Math.sin(a) * 6.6]]);
+    segs.push([[cx + Math.cos(a) * 5.4, 1.08, cz + Math.sin(a) * 5.4],
+      [cx + Math.cos(b) * 5.4, 1.08, cz + Math.sin(b) * 5.4],
+      [cx + Math.cos(b) * 6.6, 1.10, cz + Math.sin(b) * 6.6],
+      [cx + Math.cos(a) * 6.6, 1.10, cz + Math.sin(a) * 6.6]]);
   }
   const polys = [];
   for (const wp of segs) {

@@ -204,6 +204,7 @@ function processGifts(list) {
       got++;
     } else if (kind === 'coins') { state.coins += (g.n || 0); got++; }
     else if (kind === 'fans') { state.fans += (g.n || 0); got++; }
+    else if (kind === 'gems') { state.gems += (g.n || 0); got++; }
     else if (kind === 'mutation' && g.mutation) {
       if (state.players.length) {
         const pool = state.players.filter(p => !p.mut);

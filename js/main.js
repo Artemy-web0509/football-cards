@@ -18,10 +18,13 @@ function bindGlobal() {
   $('#logout-btn').onclick = logout;
   $('#backpack-btn').onclick = openBackpack;
   $('#marketplace-btn').onclick = () => showScreen('marketplace');
+  $('#quest-btn').onclick = () => showScreen('quests');
+  $('#donat-btn').onclick = () => showScreen('donat');
   $('#index-btn').onclick = () => showScreen('index');
   $('#admin-btn').onclick = () => showScreen('admin');
   $('#adm-give-coins').onclick = () => adminGiveCoins(Math.max(0, Math.floor(+$('#adm-amount').value || 0)));
   $('#adm-give-fans').onclick = () => adminGiveFans(Math.max(0, Math.floor(+$('#adm-amount').value || 0)));
+  $('#adm-give-gems').onclick = () => adminGiveGems(Math.max(0, Math.floor(+$('#adm-amount').value || 0)));
   $('#adm-give-player').onclick = adminGivePlayer;
   $('#adm-give-mut').onclick = adminGiveMut;
   $('#adm-give-mom').onclick = () => adminGiveParent('mom');

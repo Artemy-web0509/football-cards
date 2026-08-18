@@ -11,11 +11,12 @@ function defaultState() {
   for (let i = 0; i < 3; i++) make('MF');
   for (let i = 0; i < 3; i++) make('FW');
   return {
-    coins: START_COINS, fans: 0,
+    coins: START_COINS, fans: 0, gems: 0,
     players, starters, formation: '4-3-3',
     buffs: {}, cups: [], upgrades: { possession: 0, income: 0 },
     nextId: idCounter,
     beatenOpponents: [], matchesWon: 0, pvpWins: 0,
+    questsDone: [], spinsTotal: 0, questCaseCount: 0,
     held: null,
     world: { ...PLAYER_SPAWN },
     luckBoost: null,
@@ -93,6 +94,10 @@ function normalizeState(st) {
   } else if (worldCollides(st.world.x, st.world.z)) st.world = { ...PLAYER_SPAWN };
   st.luckBoost = st.luckBoost || null;
   st.nextMutationAt = st.nextMutationAt || (Date.now() + MUTATION_INTERVAL);
+  if (typeof st.gems !== 'number') st.gems = 0;
+  if (!Array.isArray(st.questsDone)) st.questsDone = [];
+  if (typeof st.spinsTotal !== 'number') st.spinsTotal = 0;
+  if (typeof st.questCaseCount !== 'number') st.questCaseCount = 0;
   return st;
 }
 

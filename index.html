@@ -8,7 +8,7 @@
 // Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
 (function () {
   try {
-    var V = 'v38';
+    var V = 'v40';
     var prev = localStorage.getItem('fc_ver');
     if (prev !== V) {
       localStorage.removeItem('fc_registry');
@@ -27,7 +27,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="style.css?v=38">
+<link rel="stylesheet" href="style.css?v=40">
 </head>
 <body>
 
@@ -36,9 +36,12 @@
   <div class="tb-item" id="coins-display">💰 0</div>
   <div class="tb-item income" id="income-display">+0/сек</div>
   <div class="tb-item" id="fans-display">👥 0</div>
+  <div class="tb-item" id="gems-display">🔮 0</div>
   <div class="tb-item user" id="user-display">👤 </div>
   <div class="tb-item hidden" id="net-display" title="Статус сервера">🖥</div>
   <button class="tb-logout" id="marketplace-btn" title="Рынок игроков">🏪</button>
+  <button class="tb-logout" id="quest-btn" title="Квесты">🎯</button>
+  <button class="tb-logout" id="donat-btn" title="Донат-магазин">🔮</button>
   <button class="tb-logout" id="index-btn" title="Индекс всех игроков">📋</button>
   <button class="tb-logout" id="backpack-btn" title="Рюкзак (клавиша B)">🎒</button>
   <button class="tb-logout hidden" id="admin-btn" title="Админ-панель">🛠</button>
@@ -186,6 +189,23 @@
   <div id="shop-market" class="tab-page active"></div>
 </div>
 
+<!-- ============ КВЕСТЫ ============ -->
+<div id="screen-quests" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🎯 Квесты</h2>
+  <p class="shop-note">Одна длинная полоса заданий. Выполняй по порядку — каждый квест даёт приз, а каждые 5 выполненных открывают <b>кейс с кристаллами 🔮</b>!</p>
+  <div id="quests-list"></div>
+  <div id="quests-case" class="shop-note" style="color:var(--accent2);font-weight:800;"></div>
+</div>
+
+<!-- ============ ДОНАТ-МАГАЗИН ============ -->
+<div id="screen-donat" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🔮 Донат-магазин</h2>
+  <p class="shop-note">Кристаллы 🔮 выдаёт администратор или кейсы квестов. Обменивай их на легендарных игроков прямо в команду!</p>
+  <div id="donat-list"></div>
+</div>
+
 <!-- ============ ИНДЕКС ВСЕХ ИГРОКОВ ============ -->
 <div id="screen-index" class="screen">
   <button class="back-btn" data-nav="world">← В мир</button>
@@ -209,6 +229,7 @@
     <div class="admin-row">
       <button class="btn" id="adm-give-coins">Дать монеты 💰</button>
       <button class="btn" id="adm-give-fans">Дать фанатов 👥</button>
+      <button class="btn" id="adm-give-gems">Дать кристаллы 🔮</button>
     </div>
   </div>
   <div class="admin-card">
@@ -290,6 +311,14 @@
     <button class="btn" id="match-sub">🔄 Замена (<span id="subs-left">3</span>)</button>
     <button class="btn" id="match-tactic">📋 Тактика</button>
   </div>
+  <div class="match-joy" id="match-joy">
+    <div class="mj-btn" id="mj-pass">🎯 Пас<br><small>E / Space</small></div>
+    <div class="mj-stick" id="mj-stick">
+      <div class="mj-knob" id="mj-knob"></div>
+    </div>
+    <div class="mj-btn" id="mj-shoot">⚽ Удар<br><small>J / F</small></div>
+  </div>
+  <p class="shop-note">Играешь за игрока, отмеченного кольцом. W A S D / стрелки / джойстик — бег, кнопка «Пас» — пас ближнему, «Удар» — удар по воротам.</p>
 </div>
 
 <!-- ============ МОДАЛКА ============ -->
@@ -313,24 +342,25 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=38"></script>
-<script src="js/data.js?v=38"></script>
-<script src="js/util.js?v=38"></script>
-<script src="js/auth.js?v=38"></script>
-<script src="js/state.js?v=38"></script>
-<script src="js/economy.js?v=38"></script>
-<script src="js/cards.js?v=38"></script>
-<script src="js/ui.js?v=38"></script>
-<script src="js/world.js?v=38"></script>
-<script src="js/roster.js?v=38"></script>
-<script src="js/screens.js?v=38"></script>
-<script src="js/market.js?v=38"></script>
-<script src="js/match.js?v=38"></script>
-<script src="js/decor.js?v=38"></script>
-<script src="js/net.js?v=38"></script>
-<script src="js/admin.js?v=38"></script>
-<script src="js/touch.js?v=38"></script>
-<script src="js/misc.js?v=38"></script>
-<script src="js/main.js?v=38"></script>
+<script src="js/supabase.js?v=40"></script>
+<script src="js/data.js?v=40"></script>
+<script src="js/util.js?v=40"></script>
+<script src="js/auth.js?v=40"></script>
+<script src="js/state.js?v=40"></script>
+<script src="js/economy.js?v=40"></script>
+<script src="js/cards.js?v=40"></script>
+<script src="js/ui.js?v=40"></script>
+<script src="js/world.js?v=40"></script>
+<script src="js/roster.js?v=40"></script>
+<script src="js/screens.js?v=40"></script>
+<script src="js/market.js?v=40"></script>
+<script src="js/match.js?v=40"></script>
+<script src="js/quests.js?v=40"></script>
+<script src="js/decor.js?v=40"></script>
+<script src="js/net.js?v=40"></script>
+<script src="js/admin.js?v=40"></script>
+<script src="js/touch.js?v=40"></script>
+<script src="js/misc.js?v=40"></script>
+<script src="js/main.js?v=40"></script>
 </body>
 </html>

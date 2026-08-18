@@ -381,6 +381,7 @@ async function spin() {
     return;
   }
   state.coins -= SPIN_COST;
+  state.spinsTotal = (state.spinsTotal || 0) + 1;
   spinning = true;
   $('#spin-result').classList.add('hidden');
   renderTop();

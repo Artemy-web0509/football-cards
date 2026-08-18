@@ -85,6 +85,11 @@ function adminGiveFans(n) {
   if (!target) { state.fans += n; save(); renderTop(); toast('+' + n + ' 👥'); return; }
   adminRemoteGive('fans', { n });
 }
+function adminGiveGems(n) {
+  const target = adminTargetNick();
+  if (!target) { state.gems += n; save(); renderTop(); toast('+' + n + ' ' + GEM_EMOJI); return; }
+  adminRemoteGive('gems', { n });
+}
 
 function adminGivePlayer() {
   const target = adminTargetNick();

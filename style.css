@@ -529,3 +529,58 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
 
 .flash-neg { animation: flashRed .4s; }
 @keyframes flashRed { 0%,100%{ background: var(--panel);} 50%{ background: #7a2430;} }
+
+/* ---------- КВЕСТЫ ---------- */
+.quest-row {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+  padding: 12px 14px; margin-bottom: 10px; max-width: 520px; margin-left: auto; margin-right: auto;
+}
+.quest-row.quest-done { border-color: var(--accent); opacity: .75; }
+.quest-row.quest-locked { opacity: .5; }
+.quest-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.quest-title { font-weight: 800; font-size: 15px; }
+.quest-num { color: var(--text-dim); font-size: 12px; white-space: nowrap; }
+.quest-desc { color: var(--text-dim); font-size: 13px; margin: 4px 0 8px; }
+.quest-bar { background: rgba(255,255,255,.08); border-radius: 20px; height: 10px; overflow: hidden; }
+.quest-fill { background: linear-gradient(90deg, var(--accent), var(--accent2)); height: 100%; border-radius: 20px; transition: width .3s; }
+.quest-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0 6px; color: var(--text-dim); font-size: 13px; }
+.quest-case { color: var(--accent2); font-weight: 800; text-align: right; }
+.quest-progress-note { color: var(--text-dim); font-size: 13px; text-align: center; }
+.quest-rewarded { color: var(--accent); font-weight: 700; text-align: center; font-size: 13px; }
+
+/* ---------- ДОНАТ-МАГАЗИН ---------- */
+.donat-row {
+  background: linear-gradient(135deg, rgba(255,210,61,.1), rgba(255,210,61,.02));
+  border: 1px solid rgba(255,210,61,.4);
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+  max-width: 520px; margin-left: auto; margin-right: auto;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.donat-row .btn { min-width: 130px; }
+.donat-info { min-width: 0; }
+
+/* ---------- ДЖОЙСТИК МАТЧА ---------- */
+.match-joy {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 12px auto; max-width: 460px;
+}
+.mj-btn {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  padding: 12px 16px; text-align: center; font-weight: 800; cursor: pointer; user-select: none;
+  min-width: 96px;
+}
+.mj-btn:active { border-color: var(--accent); background: var(--panel2); }
+.mj-btn small { display: block; color: var(--text-dim); font-weight: 600; margin-top: 3px; font-size: 11px; }
+.mj-stick {
+  position: relative; width: 118px; height: 118px; border-radius: 50%;
+  background: var(--panel); border: 2px solid var(--border);
+  touch-action: none;
+}
+.mj-knob {
+  position: absolute; left: 50%; top: 50%; width: 46px; height: 46px;
+  margin: -23px 0 0 -23px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--accent), #0c7a4f);
+  box-shadow: 0 3px 10px rgba(0,0,0,.4);
+  pointer-events: none;
+}
+.mj-pressed { border-color: var(--accent2); }

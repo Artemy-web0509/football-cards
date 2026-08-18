@@ -3,6 +3,25 @@
 const SPIN_COST = 500;
 const START_COINS = 3000;
 
+// Донат-валюта (Кристаллы 🔮). Выдаётся только администратором или из кейсов квестов.
+const GEM_EMOJI = '🔮';
+
+// Прямые топ-игроки за донат-валюту 🔮 (донат-магазин)
+const DONAT_PLAYERS = [
+  { name: 'Месси',           price: 900 },
+  { name: 'Роналду',         price: 900 },
+  { name: 'Мбаппе',          price: 700 },
+  { name: 'Хааланд',         price: 700 },
+  { name: 'Беллингем',       price: 600 },
+  { name: 'Кейн',            price: 500 },
+  { name: 'Донаррумма',      price: 450 },
+  { name: 'Ван Дейк',        price: 400 },
+  { name: 'Левандовски',     price: 400 },
+  { name: 'Сон Хынмин',      price: 350 },
+  { name: 'Гризманн',        price: 300 },
+  { name: 'Вирц',            price: 250 },
+];
+
 const POS_LABEL = { GK: 'ВРТ', DF: 'ЗАЩ', MF: 'ПЗ', FW: 'НАП' };
 const POS_ORDER = ['GK', 'DF', 'MF', 'FW'];
 
@@ -84,6 +103,34 @@ const OPPONENTS = [
   { id: 'medium',  name: 'Середняки',   emoji: '⚙️', avg: 73, fansWin: 160, fansDraw: 70 },
   { id: 'strong',  name: 'Гранды',      emoji: '💪', avg: 79, fansWin: 340, fansDraw: 150 },
   { id: 'legend',  name: 'Легенды',     emoji: '👑', avg: 86, fansWin: 750, fansDraw: 320 },
+];
+
+// Донат-валюта: за каждые 5 выполненных квестов из полосы — кейс с 🔮
+const GEMS_PER_CASE = 100;
+
+// Одна длинная полоса квестов. Выполняются строго по порядку.
+// type: wins/spins/income/coins/fans/players/gold/diamond/secret/mutation/pvp/cups/upgrades/beats
+const QUESTS = [
+  { id: 'q1',  type: 'wins',   target: 3,   title: 'Первые победы',        desc: 'Выиграй 3 матча',                          coins: 2000, fans: 50 },
+  { id: 'q2',  type: 'players', target: 15, title: 'Расширяем команду',    desc: 'Собери 15 игроков',                        coins: 1500, fans: 40 },
+  { id: 'q3',  type: 'spins',  target: 5,   title: 'Крутится-вертится',    desc: 'Прокрути спиннер 5 раз',                   coins: 2500, fans: 60 },
+  { id: 'q4',  type: 'fans',   target: 300, title: 'Народная любовь',      desc: 'Накопи 300 фанатов',                       coins: 1500, fans: 80 },
+  { id: 'q5',  type: 'gold',   target: 3,   title: 'В поисках золота',     desc: 'Собери 3 игрока золото и выше',            coins: 3000, fans: 100, gems: GEMS_PER_CASE },
+  { id: 'q6',  type: 'wins',   target: 10,  title: 'Десятый матч',         desc: 'Всего 10 побед в матчах',                  coins: 4000, fans: 120 },
+  { id: 'q7',  type: 'income', target: 300, title: 'Финансовый поток',     desc: 'Доход 300 💰/сек',                         coins: 3000, fans: 90 },
+  { id: 'q8',  type: 'players', target: 30, title: 'Большой клуб',         desc: 'Собери 30 игроков',                        coins: 3500, fans: 110 },
+  { id: 'q9',  type: 'spins',  target: 20,  title: 'Спиннер-профи',        desc: 'Прокрути спиннер 20 раз',                  coins: 5000, fans: 150 },
+  { id: 'q10', type: 'diamond', target: 2,  title: 'Бриллиантовая нить',   desc: 'Собери 2 игрока алмаз и выше',             coins: 6000, fans: 200, gems: GEMS_PER_CASE },
+  { id: 'q11', type: 'coins',  target: 30000, title: 'Состояние',          desc: 'Накопи 30 000 монет разом',                coins: 5000, fans: 160 },
+  { id: 'q12', type: 'cups',   target: 2,   title: 'Коллекционер кубков',  desc: 'Купи 2 кубка',                              coins: 2500, fans: 130 },
+  { id: 'q13', type: 'mutation', target: 3, title: 'Мистик',               desc: 'Засвети 3 мутировавшие карточки',          coins: 4500, fans: 170 },
+  { id: 'q14', type: 'beats',  target: 3,   title: 'Зверобой',             desc: 'Победи 3 разных соперников',               coins: 4000, fans: 140 },
+  { id: 'q15', type: 'fans',   target: 2000, title: 'Легенда города',      desc: 'Накопи 2000 фанатов',                      coins: 7000, fans: 300, gems: GEMS_PER_CASE },
+  { id: 'q16', type: 'wins',   target: 25,  title: 'Стойкий чемпион',      desc: 'Всего 25 побед в матчах',                  coins: 8000, fans: 250 },
+  { id: 'q17', type: 'players', target: 60, title: 'Полный состав мира',   desc: 'Собери 60 игроков',                        coins: 9000, fans: 300 },
+  { id: 'q18', type: 'upgrades', target: 30, title: 'Ферма модернизации',  desc: '30 суммарных уровней улучшений',            coins: 7000, fans: 240 },
+  { id: 'q19', type: 'spins',  target: 60,  title: 'Маньяк рулетки',       desc: 'Прокрути спиннер 60 раз',                  coins: 12000, fans: 400 },
+  { id: 'q20', type: 'secret', target: 1,   title: 'Королевская сокровищница', desc: 'Заполучи Секретную карточку 👑',       coins: 20000, fans: 600, gems: GEMS_PER_CASE },
 ];
 
 // 8 полей со спиннерами + арена в центре + зона магазинов.

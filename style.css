@@ -548,6 +548,19 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
 .quest-progress-note { color: var(--text-dim); font-size: 13px; text-align: center; }
 .quest-rewarded { color: var(--accent); font-weight: 700; text-align: center; font-size: 13px; }
 
+.quest-band {
+  max-width: 540px; margin: 0 auto 16px; padding: 10px;
+  border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,.03);
+}
+.quest-band.band-done { border-color: var(--accent2); background: rgba(255,210,61,.06); }
+.band-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 2px 4px 10px; }
+.band-title { font-weight: 900; font-size: 16px; color: var(--accent2); letter-spacing: .3px; }
+.band-prize { color: var(--text-dim); font-size: 12.5px; }
+.row-ok { color: var(--accent); font-weight: 800; font-size: 12.5px; }
+.row-progress { color: var(--accent2); font-weight: 800; font-size: 12.5px; }
+.row-locked { color: var(--text-dim); font-size: 12.5px; }
+.quest-hint { color: var(--text-dim); font-size: 12px; }
+
 /* ---------- ДОНАТ-МАГАЗИН ---------- */
 .donat-row {
   background: linear-gradient(135deg, rgba(255,210,61,.1), rgba(255,210,61,.02));

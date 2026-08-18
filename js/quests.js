@@ -1,4 +1,4 @@
-// ============ КВЕСТЫ: длинная полоса, приз за каждый, кейс с 🔮 за каждые 5 ============
+// ============ КВЕСТЫ: 4 полосы по 5 заданий. Приз за полосу, кейс с 🔮 после всех 4 ============
 
 function questProgress(q) {
   let cur = 0;
@@ -34,38 +34,54 @@ function questUnlocked(q) {
 
 function renderQuests() {
   const done = state.questsDone || [];
+  const allDone = done.length >= QUESTS.length;
   let html = '';
-  let curIdx = -1;
-  QUESTS.forEach((q, i) => { if (!questDone(q) && curIdx < 0) curIdx = i; });
-  const nextQ = curIdx >= 0 ? QUESTS[curIdx] : null;
-  for (let i = 0; i < QUESTS.length; i++) {
-    const q = QUESTS[i];
-    const isDone = questDone(q);
-    const unlocked = questUnlocked(q);
-    const p = isDone ? q.target : questProgress(q);
-    const pct = q.target ? Math.round(p / q.target * 100) : 0;
-    const box = i + 1;
-    const caseMark = (box % 5 === 0) ? `<div class="quest-case">🎁 КЕЙС +${GEMS_PER_CASE} ${GEM_EMOJI}</div>` : '';
-    html += `<div class="quest-row ${isDone ? 'quest-done' : ''} ${!unlocked ? 'quest-locked' : ''}">
-      <div class="quest-head">
-        <div class="quest-title">${isDone ? '✅' : (unlocked ? '▶' : '🔒')} ${q.title}</div>
-        <div class="quest-num">${box}/${QUESTS.length}</div>
-      </div>
-      <div class="quest-desc">${q.desc}</div>
-      <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-      <div class="quest-meta">${p}/${q.target}${caseMark}</div>
-      ${!isDone && unlocked
-        ? (p >= q.target
-          ? `<button class="btn btn-primary" data-qclaim="${q.id}">Забрать приз: ${q.coins} 💰 + ${q.fans} 👥</button>`
-          : `<div class="quest-progress-note">Идёт выполнение...</div>`)
-        : (isDone ? `<div class="quest-rewarded">Приз получен${q.gems ? ' · кейс открыт 🎁' : ''}</div>` : `<div class="quest-progress-note">Открывается после предыдущего</div>`)}
-    </div>`;
+  for (let r = 0; r < 4; r++) {
+    const rowQs = QUESTS.slice(r * 5, r * 5 + 5);
+    const rowDone = rowQs.filter(questDone).length;
+    const rp = ROW_PRIZES[r];
+    const rowFinished = rowDone >= 5;
+    const rowStatus = rowFinished ? '<span class="row-ok">✅ приз получен</span>'
+      : (rowDone > 0 ? `<span class="row-progress">${rowDone}/5</span>`
+        : '<span class="row-locked">🔒 не начата</span>');
+    html += `<div class="quest-band ${rowFinished ? 'band-done' : ''}">
+      <div class="band-head">
+        <span class="band-title">Полоса ${r + 1}/4</span>
+        <span class="band-prize">Приз: ${rp.label} · ${rp.coins} 💰 + ${rp.fans} 👥</span>
+        ${rowStatus}
+      </div>`;
+    for (const q of rowQs) {
+      const i = QUESTS.indexOf(q);
+      const isDone = questDone(q);
+      const unlocked = questUnlocked(q);
+      const p = isDone ? q.target : questProgress(q);
+      const pct = q.target ? Math.round(p / q.target * 100) : 0;
+      const box = i + 1;
+      html += `<div class="quest-row ${isDone ? 'quest-done' : ''} ${!unlocked ? 'quest-locked' : ''}">
+        <div class="quest-head">
+          <div class="quest-title">${isDone ? '✅' : (unlocked ? '▶' : '🔒')} ${q.title}</div>
+          <div class="quest-num">${box}/${QUESTS.length}</div>
+        </div>
+        <div class="quest-desc">${q.desc}</div>
+        <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
+        <div class="quest-meta">${p}/${q.target}</div>
+        ${!isDone && unlocked
+          ? (p >= q.target
+            ? `<button class="btn btn-primary" data-qclaim="${q.id}">Забрать приз: ${q.coins} 💰 + ${q.fans} 👥</button>`
+            : `<div class="quest-progress-note">Идёт выполнение...</div>`)
+          : (isDone ? `<div class="quest-rewarded">Приз получен</div>` : `<div class="quest-progress-note">Открывается после предыдущего</div>`)}
+      </div>`;
+    }
+    html += '</div>';
   }
   $('#quests-list').innerHTML = html;
   $$('#quests-list [data-qclaim]').forEach(b => b.onclick = () => claimQuest(b.dataset.qclaim));
-  const totalCases = Math.floor(done.length / 5);
-  $('#quests-case').innerHTML = `Кейсов открыто: ${state.questCaseCount || 0} • Выполнено квестов: ${done.length}` +
-    (nextQ ? '' : '<br>🏆 Все квесты пройдены! Ты — легенда!');
+  $('#quests-case').innerHTML = `Кейсов 🔮 открыто: ${state.questCaseCount || 0} • Квестов: ${done.length}/${QUESTS.length}` +
+    (allDone
+      ? `<br>🏆 Все 4 полосы пройдены! Ты — легенда!<br><button class="btn btn-primary" data-qreset="1">🔁 Начать полосу заново</button>`
+      : `<br><span class="quest-hint">🎁 После всех 4 полос — кейс с 🔮: обычно немного, а редко — до 1000!</span>`);
+  const rb = $('#quests-case [data-qreset]');
+  if (rb) rb.onclick = () => questReset();
 }
 
 function claimQuest(id) {
@@ -73,19 +89,34 @@ function claimQuest(id) {
   if (!q || questDone(q) || !questUnlocked(q)) return;
   const p = questProgress(q);
   if (p < q.target) { toast('Квест ещё не выполнен'); return; }
+  const row = Math.floor(QUESTS.indexOf(q) / 5);
   state.questsDone.push(q.id);
   state.coins += q.coins;
   state.fans += q.fans;
-  const caseNo = state.questsDone.length;
-  let gems = 0;
-  if (caseNo % 5 === 0) {
-    gems = q.gems || GEMS_PER_CASE;
-    state.gems += gems;
-    state.questCaseCount = (state.questCaseCount || 0) + 1;
+  let msg = `✅ Квест «${q.title}» выполнен! +${q.coins} 💰 +${q.fans} 👥`;
+  if (state.questsDone.length % 5 === 0) {
+    const rp = ROW_PRIZES[row];
+    if (rp) {
+      state.coins += rp.coins;
+      state.fans += rp.fans;
+      msg += ` | 🎁 Приз полосы ${row + 1}: ${rp.label} +${rp.coins} 💰 +${rp.fans} 👥`;
+    }
+    if (state.questsDone.length === QUESTS.length) {
+      const gems = rollGemsCase();
+      state.gems += gems;
+      state.questCaseCount = (state.questCaseCount || 0) + 1;
+      msg += ` | 🎁 КЕЙС за все полосы: +${gems} ${GEM_EMOJI}`;
+    }
   }
   save(); renderTop(); renderQuests();
-  if (gems) toast(`🎉 Квест «${q.title}» выполнен! +${q.coins} 💰 +${q.fans} 👥 и КЕЙС открыт: +${gems} ${GEM_EMOJI}!`);
-  else toast(`✅ Квест «${q.title}» выполнен! +${q.coins} 💰 +${q.fans} 👥`);
+  toast(msg);
+}
+
+function questReset() {
+  if (!confirm('Начать полосу заново? Полученные призы и 🔮 останутся, но все задания обнулятся.')) return;
+  state.questsDone = [];
+  save(); renderTop(); renderQuests();
+  toast('🔁 Полоса квестов начата заново');
 }
 
 // ============ ДОНАТ-МАГАЗИН ============

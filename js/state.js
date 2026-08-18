@@ -87,9 +87,12 @@ function normalizeState(st) {
   if (!st) return null;
   st.beatenOpponents = st.beatenOpponents || [];
   st.world = st.world || { ...PLAYER_SPAWN };
+  if (localStorage.getItem(FORCE_SPAWN_KEY)) {
+    try { localStorage.removeItem(FORCE_SPAWN_KEY); } catch (e) {}
+    st.world = { ...PLAYER_SPAWN };
+  } else if (worldCollides(st.world.x, st.world.z)) st.world = { ...PLAYER_SPAWN };
   st.luckBoost = st.luckBoost || null;
   st.nextMutationAt = st.nextMutationAt || (Date.now() + MUTATION_INTERVAL);
-  if (worldCollides(st.world.x, st.world.z)) st.world = { ...PLAYER_SPAWN };
   return st;
 }
 

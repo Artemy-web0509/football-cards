@@ -25,9 +25,10 @@ const ADMIN_PASS = 'ArtikartLuk0509';
 const ACCOUNTS_KEY = 'fc_accounts';
 const CUR_KEY = 'fc_current_user';
 const SAVE_PREFIX = 'fc_save_';
-const APP_VERSION = 'v37';
+const APP_VERSION = 'v38';
 const VER_KEY = 'fc_ver';
 const CLOUD_RESET_KEY = 'fc_reset_cloud';
+const FORCE_SPAWN_KEY = 'fc_force_spawn';
 
 function checkAppVersion() {
   try {
@@ -43,6 +44,7 @@ function checkAppVersion() {
         }
       } catch (e) {}
       try { localStorage.setItem(CLOUD_RESET_KEY, '1'); } catch (e) {}
+      try { localStorage.setItem(FORCE_SPAWN_KEY, '1'); } catch (e) {}
     }
     localStorage.setItem(VER_KEY, APP_VERSION);
   } catch (e) {}

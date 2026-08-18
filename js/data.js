@@ -103,7 +103,7 @@ const ARENA = { name: '⚔ Мультиплеер-арена', x: 75, z: 75, siz
 const MARKET = { name: 'Магазины', color: '#ffd23d', x: 75, z: 170 };
 
 const WORLD_SIZE = 180;
-const PLAYER_SPAWN = { x: 100, z: 135, yaw: -2.11, facing: -2.11 };
+const PLAYER_SPAWN = { x: 60, z: 80, yaw: 1.57, facing: 1.57 };
 
 // УНИКАЛЬНЫЕ РЕАЛЬНЫЕ ФУТБОЛИСТЫ: каждый игрок существует в игре в одном экземпляре.
 // Редкость определяется рейтингом (см. rarityForRating).

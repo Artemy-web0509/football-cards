@@ -177,16 +177,17 @@ function project(cam, wx, wy, wz) {
 function projectPoly(cam, wp) {
   const near = 0.15, tanF = Math.tan(FOV / 2);
   const focal = (H / 2) / tanF;
+  const tanFh = tanF * (W / H);
 
   // Отсечение выпуклого полигона плоскостями фрустума в мировых координатах.
   // Полуплоскость: f <= 0 -> внутри.
   const planes = [
     // near:  zr >= near
     p => near - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos),
-    // left:  xr + zr*tanF >= 0
-    p => -(((p[0] - cam.x) * cam.cos - (p[2] - cam.z) * cam.sin) + ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF),
-    // right: xr - zr*tanF <= 0
-    p => ((p[0] - cam.x) * cam.cos - (p[2] - cam.z) * cam.sin) - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF,
+    // left:  xr + zr*tanFh >= 0
+    p => -(((p[0] - cam.x) * cam.cos - (p[2] - cam.z) * cam.sin) + ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanFh),
+    // right: xr - zr*tanFh <= 0
+    p => ((p[0] - cam.x) * cam.cos - (p[2] - cam.z) * cam.sin) - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanFh,
     // top:   yr - zr*tanF <= 0
     p => (p[1] - cam.y) - ((p[0] - cam.x) * cam.sin + (p[2] - cam.z) * cam.cos) * tanF,
     // bottom:-yr - zr*tanF <= 0

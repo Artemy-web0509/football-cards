@@ -40,6 +40,18 @@ const Q_ICON = {
 
 function rowDoneCount(r) { return QUESTS.slice(r * 5, r * 5 + 5).filter(questDone).length; }
 
+// Случайный игрок за полосу: редкость из пула ROW_PRIZES[row], позиция случайная
+function rollRowPlayer(row) {
+  const rp = ROW_PRIZES[row];
+  const pool = [];
+  rp.pool.forEach((t, i) => {
+    const w = i === rp.pool.length - 1 ? 3 : 1;
+    for (let k = 0; k < w; k++) pool.push(t);
+  });
+  const pos = pick(['GK', 'DF', 'MF', 'FW']);
+  return generatePlayer(pick(pool), pos);
+}
+
 function renderQuests() {
   const done = state.questsDone || [];
   const allDone = done.length >= QUESTS.length;
@@ -66,10 +78,11 @@ function renderQuests() {
   html += '<div class="qprizes">';
   ROW_PRIZES.forEach((rp, r) => {
     const rd = rowDoneCount(r);
+    const emojis = rp.pool.map(t => RARITIES[t].emoji).join(' ');
     html += `<div class="qprize ${rd >= 5 ? 'qprize-done' : ''}">
       <div class="qprize-label">Полоса ${r + 1}</div>
       <div class="qprize-val">${rp.label}</div>
-      <div class="qprize-reward">${rp.coins} 💰 · ${rp.fans} 👥</div>
+      <div class="qprize-reward">${emojis} случайный</div>
       <div class="qprize-state">${rd >= 5 ? '✅' : ''}</div>
     </div>`;
   });
@@ -103,7 +116,7 @@ function renderQuestDetail(qid) {
     inner = `<div class="qd-title">▶ ${q.title}</div>
       <div class="qd-desc">${q.desc}</div>
       <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-      <div class="quest-meta">${p}/${q.target} · Награда: ${q.coins} 💰 + ${q.fans} 👥</div>
+      <div class="quest-meta">${p}/${q.target}</div>
       ${p >= q.target
         ? `<button class="btn btn-primary" data-qclaim="${q.id}">Забрать приз</button>`
         : '<div class="quest-progress-note">Идёт выполнение...</div>'}`;
@@ -112,7 +125,7 @@ function renderQuestDetail(qid) {
       <div class="qd-desc">${q.desc}</div>
       <div class="quest-progress-note">Открывается после предыдущего</div>`;
   }
-  inner += `<div class="qd-row">Приз полосы: ${rp.label} · ${rp.coins} 💰 + ${rp.fans} 👥</div>`;
+  inner += `<div class="qd-row">Приз полосы: ${rp.label} · ${rp.pool.map(t => RARITIES[t].emoji).join(' ')}</div>`;
   $('#quest-detail').innerHTML = inner;
   const b = $('#quest-detail [data-qclaim]');
   if (b) b.onclick = () => claimQuest(b.dataset.qclaim);
@@ -125,16 +138,14 @@ function claimQuest(id) {
   if (p < q.target) { toast('Квест ещё не выполнен'); return; }
   const row = Math.floor(QUESTS.indexOf(q) / 5);
   state.questsDone.push(q.id);
-  state.coins += q.coins;
-  state.fans += q.fans;
-  let msg = `✅ Квест «${q.title}» выполнен! +${q.coins} 💰 +${q.fans} 👥`;
+  let msg = `✅ Квест «${q.title}» выполнен!`;
   if (state.questsDone.length % 5 === 0) {
-    const rp = ROW_PRIZES[row];
-    if (rp) {
-      state.coins += rp.coins;
-      state.fans += rp.fans;
-      msg += ` | 🎁 Приз полосы ${row + 1}: ${rp.label} +${rp.coins} 💰 +${rp.fans} 👥`;
-    }
+    const pl = rollRowPlayer(row);
+    state.players.push(pl);
+    if (state.starters.length < 11) state.starters.push(pl.id);
+    const rname = RARITIES[pl.rarity].name;
+    const remoji = RARITIES[pl.rarity].emoji;
+    msg += ` | 🎁 Приз полосы ${row + 1}: ${remoji} ${pl.name} (${pl.rating}, ${rname})!`;
     if (state.questsDone.length === QUESTS.length) {
       const gems = rollGemsCase();
       state.gems += gems;

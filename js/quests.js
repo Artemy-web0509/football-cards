@@ -32,56 +32,90 @@ function questUnlocked(q) {
   return questDone(QUESTS[idx - 1]);
 }
 
+const Q_ICON = {
+  wins: '⚽', spins: '🎡', income: '💰', coins: '💰', fans: '👥',
+  players: '🎴', gold: '🥇', diamond: '💎', secret: '👑', mutation: '🧬',
+  cups: '🏆', upgrades: '🛠', beats: '🤺', pvp: '⚔️',
+};
+
+function rowDoneCount(r) { return QUESTS.slice(r * 5, r * 5 + 5).filter(questDone).length; }
+
 function renderQuests() {
   const done = state.questsDone || [];
   const allDone = done.length >= QUESTS.length;
-  let html = '';
+  let html = '<div class="qgrid">';
   for (let r = 0; r < 4; r++) {
     const rowQs = QUESTS.slice(r * 5, r * 5 + 5);
-    const rowDone = rowQs.filter(questDone).length;
-    const rp = ROW_PRIZES[r];
-    const rowFinished = rowDone >= 5;
-    const rowStatus = rowFinished ? '<span class="row-ok">✅ приз получен</span>'
-      : (rowDone > 0 ? `<span class="row-progress">${rowDone}/5</span>`
-        : '<span class="row-locked">🔒 не начата</span>');
-    html += `<div class="quest-band ${rowFinished ? 'band-done' : ''}">
-      <div class="band-head">
-        <span class="band-title">Полоса ${r + 1}/4</span>
-        <span class="band-prize">Приз: ${rp.label} · ${rp.coins} 💰 + ${rp.fans} 👥</span>
-        ${rowStatus}
-      </div>`;
-    for (const q of rowQs) {
-      const i = QUESTS.indexOf(q);
+    const rd = rowDoneCount(r);
+    html += `<div class="qrow ${rd >= 5 ? 'qrow-done' : ''}">`;
+    rowQs.forEach((q, k) => {
       const isDone = questDone(q);
       const unlocked = questUnlocked(q);
-      const p = isDone ? q.target : questProgress(q);
-      const pct = q.target ? Math.round(p / q.target * 100) : 0;
-      const box = i + 1;
-      html += `<div class="quest-row ${isDone ? 'quest-done' : ''} ${!unlocked ? 'quest-locked' : ''}">
-        <div class="quest-head">
-          <div class="quest-title">${isDone ? '✅' : (unlocked ? '▶' : '🔒')} ${q.title}</div>
-          <div class="quest-num">${box}/${QUESTS.length}</div>
-        </div>
-        <div class="quest-desc">${q.desc}</div>
-        <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
-        <div class="quest-meta">${p}/${q.target}</div>
-        ${!isDone && unlocked
-          ? (p >= q.target
-            ? `<button class="btn btn-primary" data-qclaim="${q.id}">Забрать приз: ${q.coins} 💰 + ${q.fans} 👥</button>`
-            : `<div class="quest-progress-note">Идёт выполнение...</div>`)
-          : (isDone ? `<div class="quest-rewarded">Приз получен</div>` : `<div class="quest-progress-note">Открывается после предыдущего</div>`)}
+      const claimable = unlocked && !isDone && questProgress(q) >= q.target;
+      const cls = isDone ? 'qcell-done' : (claimable ? 'qcell-claim' : (unlocked ? 'qcell-act' : 'qcell-lock'));
+      const emoji = isDone ? '✅' : (unlocked ? (Q_ICON[q.type] || '❓') : '🔒');
+      html += `<div class="qcell ${cls}" data-qid="${q.id}">
+        <div class="qc-num">${r * 5 + k + 1}</div>
+        <div class="qc-ico">${emoji}</div>
+        ${claimable ? '<div class="qc-badge">!</div>' : ''}
       </div>`;
-    }
+    });
     html += '</div>';
   }
+  html += '</div>';
+  html += '<div class="qprizes">';
+  ROW_PRIZES.forEach((rp, r) => {
+    const rd = rowDoneCount(r);
+    html += `<div class="qprize ${rd >= 5 ? 'qprize-done' : ''}">
+      <div class="qprize-label">Полоса ${r + 1}</div>
+      <div class="qprize-val">${rp.label}</div>
+      <div class="qprize-reward">${rp.coins} 💰 · ${rp.fans} 👥</div>
+      <div class="qprize-state">${rd >= 5 ? '✅' : ''}</div>
+    </div>`;
+  });
+  html += '</div>';
+  html += '<div class="qdetail" id="quest-detail"></div>';
   $('#quests-list').innerHTML = html;
-  $$('#quests-list [data-qclaim]').forEach(b => b.onclick = () => claimQuest(b.dataset.qclaim));
+  $$('#quests-list .qcell').forEach(c => c.onclick = () => renderQuestDetail(c.dataset.qid));
+  const cur = QUESTS.find(q => !questDone(q));
+  renderQuestDetail(cur ? cur.id : QUESTS[QUESTS.length - 1].id);
   $('#quests-case').innerHTML = `Кейсов 🔮 открыто: ${state.questCaseCount || 0} • Квестов: ${done.length}/${QUESTS.length}` +
     (allDone
       ? `<br>🏆 Все 4 полосы пройдены! Ты — легенда!<br><button class="btn btn-primary" data-qreset="1">🔁 Начать полосу заново</button>`
       : `<br><span class="quest-hint">🎁 После всех 4 полос — кейс с 🔮: обычно немного, а редко — до 1000!</span>`);
   const rb = $('#quests-case [data-qreset]');
   if (rb) rb.onclick = () => questReset();
+}
+
+function renderQuestDetail(qid) {
+  const q = QUESTS.find(x => x.id === qid);
+  if (!q) return;
+  const isDone = questDone(q);
+  const unlocked = questUnlocked(q);
+  const p = isDone ? q.target : questProgress(q);
+  const pct = q.target ? Math.round(p / q.target * 100) : 0;
+  const rp = ROW_PRIZES[Math.floor(QUESTS.indexOf(q) / 5)];
+  let inner;
+  if (isDone) {
+    inner = `<div class="qd-title">✅ ${q.title}</div>
+      <div class="qd-done">Приз получен · Задание ${QUESTS.indexOf(q) + 1}/20</div>`;
+  } else if (unlocked) {
+    inner = `<div class="qd-title">▶ ${q.title}</div>
+      <div class="qd-desc">${q.desc}</div>
+      <div class="quest-bar"><div class="quest-fill" style="width:${pct}%"></div></div>
+      <div class="quest-meta">${p}/${q.target} · Награда: ${q.coins} 💰 + ${q.fans} 👥</div>
+      ${p >= q.target
+        ? `<button class="btn btn-primary" data-qclaim="${q.id}">Забрать приз</button>`
+        : '<div class="quest-progress-note">Идёт выполнение...</div>'}`;
+  } else {
+    inner = `<div class="qd-title">🔒 ${q.title}</div>
+      <div class="qd-desc">${q.desc}</div>
+      <div class="quest-progress-note">Открывается после предыдущего</div>`;
+  }
+  inner += `<div class="qd-row">Приз полосы: ${rp.label} · ${rp.coins} 💰 + ${rp.fans} 👥</div>`;
+  $('#quest-detail').innerHTML = inner;
+  const b = $('#quest-detail [data-qclaim]');
+  if (b) b.onclick = () => claimQuest(b.dataset.qclaim);
 }
 
 function claimQuest(id) {

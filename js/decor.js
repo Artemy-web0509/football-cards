@@ -695,8 +695,8 @@ function signPolys(o, title, color, cam, labels) {
 
 
 
-// Спиннер: статичное вертикальное колесо. Рисуется как фиксированная картинка-табло:
-// при обходе не «вращается» и не поворачивается — вид всегда одинаковый.
+// Спиннер: вертикальное колесо с фиксированной ориентацией — у него есть ПЕРЕДНЯЯ часть,
+// ЗАДНЯЯ часть и РЕБРО (обод). Не поворачивается к игроку и не «вращается» при обходе.
 function drawWorldRoulette(cam, base) {
   const sp = spinnerPosFor(base);
   if (distToCam(sp.x, sp.z) > 120) return;
@@ -704,34 +704,66 @@ function drawWorldRoulette(cam, base) {
   const c = project(cam, sp.x, y, sp.z);
   if (!c) return;
   const S = Math.max(14, R * c.scale);
+  const rimW = Math.max(4, 0.9 * c.scale);
+  const hubR = Math.max(2.5, 0.8 * c.scale);
+  const knob = Math.max(3, 0.5 * c.scale);
+
+  // РЕБРО (обод): тёмный круг снаружи — виден сбоку
+  wc.beginPath(); wc.arc(c.x, c.y, S + rimW, 0, Math.PI * 2);
+  wc.fillStyle = '#5a3a17'; wc.fill();
+  wc.strokeStyle = 'rgba(0,0,0,0.55)';
+  wc.lineWidth = Math.max(1.5, 0.3 * c.scale);
+  wc.stroke();
+
+  // Колесо смотрит в фиксированную сторону (к своему полю, -X).
+  // Камера с той стороны -> видим ПЕРЕДНЮЮ часть, с другой -> ЗАДНЮЮ.
+  const front = (sp.x - cam.x) > 0;
   const cols = ['#ff5d5d', '#ffd23d', '#57c7ff', '#3ddc84', '#c050ff'];
   const seg = 30;
-  wc.lineWidth = 1.2;
-  wc.strokeStyle = 'rgba(0,0,0,0.45)';
-  for (let i = 0; i < seg; i++) {
-    const a0 = (i / seg) * Math.PI * 2 - Math.PI / 2;
-    const a1 = ((i + 1) / seg) * Math.PI * 2 - Math.PI / 2;
-    wc.beginPath();
-    wc.moveTo(c.x, c.y);
-    wc.lineTo(c.x + Math.cos(a0) * S, c.y + Math.sin(a0) * S);
-    wc.lineTo(c.x + Math.cos(a1) * S, c.y + Math.sin(a1) * S);
-    wc.closePath();
-    wc.fillStyle = cols[Math.floor(i / (seg / 5)) % 5];
-    wc.fill();
-    wc.stroke();
+  if (front) {
+    wc.lineWidth = 1.2;
+    wc.strokeStyle = 'rgba(0,0,0,0.45)';
+    const colsSeg = cols;
+    for (let i = 0; i < seg; i++) {
+      const a0 = (i / seg) * Math.PI * 2 - Math.PI / 2;
+      const a1 = ((i + 1) / seg) * Math.PI * 2 - Math.PI / 2;
+      wc.beginPath();
+      wc.moveTo(c.x, c.y);
+      wc.lineTo(c.x + Math.cos(a0) * S, c.y + Math.sin(a0) * S);
+      wc.lineTo(c.x + Math.cos(a1) * S, c.y + Math.sin(a1) * S);
+      wc.closePath();
+      wc.fillStyle = colsSeg[Math.floor(i / (seg / 5)) % 5];
+      wc.fill();
+      wc.stroke();
+    }
+  } else {
+    // ЗАДНЯЯ часть: тёмная с лучами-спицами
+    wc.beginPath(); wc.arc(c.x, c.y, S, 0, Math.PI * 2);
+    wc.fillStyle = '#2a1a05'; wc.fill();
+    wc.strokeStyle = 'rgba(255,210,61,0.55)';
+    wc.lineWidth = 1.5;
+    for (let i = 0; i < seg; i += 3) {
+      const a = (i / seg) * Math.PI * 2 - Math.PI / 2;
+      wc.beginPath(); wc.moveTo(c.x, c.y); wc.lineTo(c.x + Math.cos(a) * S, c.y + Math.sin(a) * S); wc.stroke();
+    }
   }
-  wc.beginPath(); wc.arc(c.x, c.y, S + Math.max(3, 0.45 * c.scale), 0, Math.PI * 2);
+
+  // Золотая обводка (передний обод)
+  wc.beginPath(); wc.arc(c.x, c.y, S, 0, Math.PI * 2);
   wc.strokeStyle = '#ffd23d';
   wc.lineWidth = Math.max(2, 0.5 * c.scale);
   wc.stroke();
+
+  // Ступица
   wc.save();
   wc.shadowColor = 'rgba(255,200,60,0.9)';
   wc.shadowBlur = Math.max(6, 1.4 * c.scale);
-  wc.beginPath(); wc.arc(c.x, c.y, Math.max(2.5, 0.8 * c.scale), 0, Math.PI * 2);
+  wc.beginPath(); wc.arc(c.x, c.y, hubR, 0, Math.PI * 2);
   wc.fillStyle = '#2a1a05'; wc.fill();
   wc.restore();
-  const knob = Math.max(3, 0.5 * c.scale);
-  wc.beginPath(); wc.arc(c.x, c.y - S - knob, knob, 0, Math.PI * 2);
+
+  // Верхний указатель
+  wc.beginPath(); wc.arc(c.x, c.y - S - rimW, knob, 0, Math.PI * 2);
   wc.fillStyle = '#ffd23d'; wc.fill();
   wc.strokeStyle = '#222'; wc.lineWidth = 1.5; wc.stroke();
 }

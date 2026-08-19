@@ -695,80 +695,45 @@ function signPolys(o, title, color, cam, labels) {
 
 
 
-// Направление спиннера: колёса стоят вертикально, лицом к центру мира, и НЕ поворачиваются к игроку
-function spinnerWheelAxis(base) {
-  const sp = spinnerPosFor(base);
-  let dx = 75 - sp.x, dz = 75 - sp.z;
-  const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-  return { nx: dx, nz: dz, ux: -dz, uz: dx };
-}
-
+// Спиннер: статичное вертикальное колесо. Рисуется как фиксированная картинка-табло:
+// при обходе не «вращается» и не поворачивается — вид всегда одинаковый.
 function drawWorldRoulette(cam, base) {
   const sp = spinnerPosFor(base);
   if (distToCam(sp.x, sp.z) > 120) return;
   const R = 3.4, y = 4.9;
-  const ax = spinnerWheelAxis(base);
   const c = project(cam, sp.x, y, sp.z);
   if (!c) return;
+  const S = Math.max(14, R * c.scale);
   const cols = ['#ff5d5d', '#ffd23d', '#57c7ff', '#3ddc84', '#c050ff'];
   const seg = 30;
-  const wedges = [];
-  for (let i = 0; i < seg; i++) {
-    const a0 = (i / seg) * Math.PI * 2;
-    const a1 = ((i + 1) / seg) * Math.PI * 2;
-    const ca0 = Math.cos(a0), sa0 = Math.sin(a0);
-    const ca1 = Math.cos(a1), sa1 = Math.sin(a1);
-    const p0 = project(cam, sp.x + ax.ux * ca0 * R, y + sa0 * R, sp.z + ax.uz * ca0 * R);
-    const p1 = project(cam, sp.x + ax.ux * ca1 * R, y + sa1 * R, sp.z + ax.uz * ca1 * R);
-    if (!p0 || !p1) continue;
-    const am = (a0 + a1) / 2;
-    const mx = sp.x + ax.ux * Math.cos(am) * R, my = y + Math.sin(am) * R, mz = sp.z + ax.uz * Math.cos(am) * R;
-    const depth = Math.hypot(mx - cam.x, my - cam.y, mz - cam.z);
-    wedges.push({ p0, p1, col: cols[Math.floor(i / (seg / 5)) % 5], depth });
-  }
-  wedges.sort((a, b) => b.depth - a.depth);
   wc.lineWidth = 1.2;
   wc.strokeStyle = 'rgba(0,0,0,0.45)';
-  for (const w of wedges) {
+  for (let i = 0; i < seg; i++) {
+    const a0 = (i / seg) * Math.PI * 2 - Math.PI / 2;
+    const a1 = ((i + 1) / seg) * Math.PI * 2 - Math.PI / 2;
     wc.beginPath();
     wc.moveTo(c.x, c.y);
-    wc.lineTo(w.p0.x, w.p0.y);
-    wc.lineTo(w.p1.x, w.p1.y);
+    wc.lineTo(c.x + Math.cos(a0) * S, c.y + Math.sin(a0) * S);
+    wc.lineTo(c.x + Math.cos(a1) * S, c.y + Math.sin(a1) * S);
     wc.closePath();
-    wc.fillStyle = w.col;
+    wc.fillStyle = cols[Math.floor(i / (seg / 5)) % 5];
     wc.fill();
     wc.stroke();
   }
-  const rim = [];
-  for (let i = 0; i <= 24; i++) {
-    const a = i / 24 * Math.PI * 2;
-    const p = project(cam, sp.x + ax.ux * Math.cos(a) * (R + 0.45), y + Math.sin(a) * (R + 0.45), sp.z + ax.uz * Math.cos(a) * (R + 0.45));
-    if (p) rim.push(p);
-  }
-  if (rim.length > 3) {
-    wc.beginPath();
-    wc.moveTo(rim[0].x, rim[0].y);
-    for (let i = 1; i < rim.length; i++) wc.lineTo(rim[i].x, rim[i].y);
-    wc.closePath();
-    wc.strokeStyle = '#ffd23d';
-    wc.lineWidth = Math.max(2, 0.5 * c.scale);
-    wc.stroke();
-    wc.strokeStyle = 'rgba(255,255,255,0.7)';
-    wc.lineWidth = Math.max(1, 0.22 * c.scale);
-    wc.stroke();
-  }
+  wc.beginPath(); wc.arc(c.x, c.y, S + Math.max(3, 0.45 * c.scale), 0, Math.PI * 2);
+  wc.strokeStyle = '#ffd23d';
+  wc.lineWidth = Math.max(2, 0.5 * c.scale);
+  wc.stroke();
   wc.save();
   wc.shadowColor = 'rgba(255,200,60,0.9)';
   wc.shadowBlur = Math.max(6, 1.4 * c.scale);
   wc.beginPath(); wc.arc(c.x, c.y, Math.max(2.5, 0.8 * c.scale), 0, Math.PI * 2);
   wc.fillStyle = '#2a1a05'; wc.fill();
   wc.restore();
-  const tp = project(cam, sp.x, y + R + 0.55, sp.z);
-  if (tp) {
-    wc.beginPath(); wc.arc(tp.x, tp.y, Math.max(3, 0.5 * tp.scale), 0, Math.PI * 2);
-    wc.fillStyle = '#ffd23d'; wc.fill();
-    wc.strokeStyle = '#222'; wc.lineWidth = 1.5; wc.stroke();
-  }
+  const knob = Math.max(3, 0.5 * c.scale);
+  wc.beginPath(); wc.arc(c.x, c.y - S - knob, knob, 0, Math.PI * 2);
+  wc.fillStyle = '#ffd23d'; wc.fill();
+  wc.strokeStyle = '#222'; wc.lineWidth = 1.5; wc.stroke();
 }
 
 function drawDecorLabels(cam, labels) {

@@ -695,75 +695,96 @@ function signPolys(o, title, color, cam, labels) {
 
 
 
-// Спиннер: вертикальное колесо с фиксированной ориентацией — у него есть ПЕРЕДНЯЯ часть,
-// ЗАДНЯЯ часть и РЕБРО (обод). Не поворачивается к игроку и не «вращается» при обходе.
+// Спиннер: настоящее 3D-колесо с толщиной. Есть ПЕРЕДНЯЯ часть (цветная),
+// ЗАДНЯЯ часть (тёмная) и РЕБРО (боковая лента). Ориентация фиксированная:
+// при обходе колесо перспективно сжимается (эллипс), видно ребро и спинку,
+// но самый узор не прокручивается и не поворачивается к игроку.
 function drawWorldRoulette(cam, base) {
   const sp = spinnerPosFor(base);
   if (distToCam(sp.x, sp.z) > 120) return;
-  const R = 3.4, y = 4.9;
+  const R = 3.4, y = 4.9, t = 0.7, seg = 30;
+  const cols = ['#ff5d5d', '#ffd23d', '#57c7ff', '#3ddc84', '#c050ff'];
+  const frontX = sp.x - t / 2, backX = sp.x + t / 2;
   const c = project(cam, sp.x, y, sp.z);
   if (!c) return;
-  const S = Math.max(14, R * c.scale);
-  const rimW = Math.max(4, 0.9 * c.scale);
-  const hubR = Math.max(2.5, 0.8 * c.scale);
-  const knob = Math.max(3, 0.5 * c.scale);
 
-  // РЕБРО (обод): тёмный круг снаружи — виден сбоку
-  wc.beginPath(); wc.arc(c.x, c.y, S + rimW, 0, Math.PI * 2);
-  wc.fillStyle = '#5a3a17'; wc.fill();
-  wc.strokeStyle = 'rgba(0,0,0,0.55)';
-  wc.lineWidth = Math.max(1.5, 0.3 * c.scale);
-  wc.stroke();
+  const ringPt = (px, a) => [px, y + R * Math.sin(a), sp.z + R * Math.cos(a)];
+  const dist3 = (p) => Math.hypot(p[0] - cam.x, p[1] - cam.y, p[2] - cam.z);
 
-  // Колесо смотрит в фиксированную сторону (к своему полю, -X).
-  // Камера с той стороны -> видим ПЕРЕДНЮЮ часть, с другой -> ЗАДНЮЮ.
-  const front = (sp.x - cam.x) > 0;
-  const cols = ['#ff5d5d', '#ffd23d', '#57c7ff', '#3ddc84', '#c050ff'];
-  const seg = 30;
-  if (front) {
-    wc.lineWidth = 1.2;
-    wc.strokeStyle = 'rgba(0,0,0,0.45)';
-    const colsSeg = cols;
-    for (let i = 0; i < seg; i++) {
-      const a0 = (i / seg) * Math.PI * 2 - Math.PI / 2;
-      const a1 = ((i + 1) / seg) * Math.PI * 2 - Math.PI / 2;
-      wc.beginPath();
-      wc.moveTo(c.x, c.y);
-      wc.lineTo(c.x + Math.cos(a0) * S, c.y + Math.sin(a0) * S);
-      wc.lineTo(c.x + Math.cos(a1) * S, c.y + Math.sin(a1) * S);
-      wc.closePath();
-      wc.fillStyle = colsSeg[Math.floor(i / (seg / 5)) % 5];
-      wc.fill();
-      wc.stroke();
-    }
-  } else {
-    // ЗАДНЯЯ часть: тёмная с лучами-спицами
-    wc.beginPath(); wc.arc(c.x, c.y, S, 0, Math.PI * 2);
-    wc.fillStyle = '#2a1a05'; wc.fill();
-    wc.strokeStyle = 'rgba(255,210,61,0.55)';
-    wc.lineWidth = 1.5;
-    for (let i = 0; i < seg; i += 3) {
-      const a = (i / seg) * Math.PI * 2 - Math.PI / 2;
-      wc.beginPath(); wc.moveTo(c.x, c.y); wc.lineTo(c.x + Math.cos(a) * S, c.y + Math.sin(a) * S); wc.stroke();
-    }
+  const items = [];
+  const proj = (wp) => {
+    const p = projectPoly(cam, wp);
+    return p ? p.map(pt => ({ x: pt.x, y: pt.y })) : null;
+  };
+
+  // ЗАДНЯЯ часть (тёмная)
+  const backDisk = [];
+  for (let i = 0; i < seg; i++) backDisk.push(ringPt(backX, (i / seg) * Math.PI * 2));
+  const bp = proj(backDisk);
+  if (bp) items.push({ pts: bp, color: '#2a1a05', depth: dist3([backX, y, sp.z]) });
+
+  // РЕБРО: боковая лента между передним и задним ободом
+  for (let i = 0; i < seg; i++) {
+    const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
+    const quad = [ringPt(backX, a0), ringPt(backX, a1), ringPt(frontX, a1), ringPt(frontX, a0)];
+    const q = proj(quad);
+    if (q) items.push({ pts: q, color: '#6b451c', depth: dist3([(frontX + backX) / 2, y + R * Math.sin((a0 + a1) / 2), sp.z + R * Math.cos((a0 + a1) / 2)]) });
   }
 
-  // Золотая обводка (передний обод)
-  wc.beginPath(); wc.arc(c.x, c.y, S, 0, Math.PI * 2);
-  wc.strokeStyle = '#ffd23d';
-  wc.lineWidth = Math.max(2, 0.5 * c.scale);
-  wc.stroke();
+  // ПЕРЕДНЯЯ часть: цветные сегменты, порядок ФИКСИРОВАН (не прокручивается)
+  const fc = project(cam, frontX, y, sp.z);
+  for (let i = 0; i < seg; i++) {
+    const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
+    const tri = [ringPt(frontX, a0), ringPt(frontX, a1), [frontX, y, sp.z]];
+    const tr = proj(tri);
+    if (tr) items.push({
+      pts: tr, color: cols[Math.floor(i / (seg / 5)) % 5],
+      depth: dist3([frontX, y + R * Math.sin((a0 + a1) / 2), sp.z + R * Math.cos((a0 + a1) / 2)]),
+    });
+  }
+
+  items.sort((a, b) => b.depth - a.depth);
+  for (const it of items) {
+    if (it.pts.length < 3) continue;
+    wc.beginPath();
+    wc.moveTo(it.pts[0].x, it.pts[0].y);
+    for (let k = 1; k < it.pts.length; k++) wc.lineTo(it.pts[k].x, it.pts[k].y);
+    wc.closePath();
+    wc.fillStyle = it.color;
+    wc.fill();
+    wc.strokeStyle = 'rgba(0,0,0,0.35)';
+    wc.lineWidth = 1;
+    wc.stroke();
+  }
+
+  // Золотой обод по переднему кругу
+  const rimPts = [];
+  for (let i = 0; i <= seg; i++) {
+    const p = project(cam, frontX, y + R * Math.sin((i / seg) * Math.PI * 2), sp.z + R * Math.cos((i / seg) * Math.PI * 2));
+    if (p) rimPts.push(p);
+  }
+  if (rimPts.length > 3) {
+    wc.beginPath();
+    wc.moveTo(rimPts[0].x, rimPts[0].y);
+    for (let i = 1; i < rimPts.length; i++) wc.lineTo(rimPts[i].x, rimPts[i].y);
+    wc.closePath();
+    wc.strokeStyle = '#ffd23d';
+    wc.lineWidth = Math.max(2, 0.5 * c.scale);
+    wc.stroke();
+  }
 
   // Ступица
   wc.save();
   wc.shadowColor = 'rgba(255,200,60,0.9)';
   wc.shadowBlur = Math.max(6, 1.4 * c.scale);
-  wc.beginPath(); wc.arc(c.x, c.y, hubR, 0, Math.PI * 2);
+  wc.beginPath(); wc.arc(c.x, c.y, Math.max(2.5, 0.8 * c.scale), 0, Math.PI * 2);
   wc.fillStyle = '#2a1a05'; wc.fill();
   wc.restore();
 
   // Верхний указатель
-  wc.beginPath(); wc.arc(c.x, c.y - S - rimW, knob, 0, Math.PI * 2);
+  const S = Math.max(14, R * c.scale);
+  const knob = Math.max(3, 0.5 * c.scale);
+  wc.beginPath(); wc.arc(c.x, c.y - S - knob, knob, 0, Math.PI * 2);
   wc.fillStyle = '#ffd23d'; wc.fill();
   wc.strokeStyle = '#222'; wc.lineWidth = 1.5; wc.stroke();
 }

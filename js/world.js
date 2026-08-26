@@ -513,7 +513,7 @@ function renderWorld() {
     polys.push(...fieldPolys(base, cam, i === myHome));
     polys.push(...fieldFencePolys(base, cam));
     polys.push(...fieldCenterRing(base, cam));
-    polys.push(...fieldOwnerPolys(base, i, cam, labels));    polys.push(...spinnerPolys(base, cam));
+    polys.push(...fieldOwnerPolys(base, i, cam, labels));
     if (i === myHome) polys.push(...homeFlagPolys(base, cam, labels));
     const ls = LUCK_SIGNS[i], fs = FIELDUPG_SIGNS[i];
     polys.push(...signPolys(ls, '🍀 Удача', '#ffd23d', cam, labels));

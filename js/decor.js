@@ -702,7 +702,7 @@ function signPolys(o, title, color, cam, labels) {
 function drawWorldRoulette(cam, base) {
   const sp = spinnerPosFor(base);
   if (distToCam(sp.x, sp.z) > 120) return;
-  const R = 3.4, y = 4.9, t = 0.7, seg = 30;
+  const R = 3.4, y = 4.9, t = 1.8, seg = 40;
   const cols = ['#ff5d5d', '#ffd23d', '#57c7ff', '#3ddc84', '#c050ff'];
   const frontX = sp.x - t / 2, backX = sp.x + t / 2;
   const c = project(cam, sp.x, y, sp.z);
@@ -717,22 +717,36 @@ function drawWorldRoulette(cam, base) {
     return p ? p.map(pt => ({ x: pt.x, y: pt.y })) : null;
   };
 
+  // Опорный столб (3D-коробка), чтобы колесо не висело в воздухе
+  const postBottom = 0, postTop = y - R - 0.2, pw = 0.6, pd = 0.6;
+  const postFaces = [
+    // боковые грани (4 шт) + верх
+    [[sp.x - pw, postBottom, sp.z - pd], [sp.x - pw, postTop, sp.z - pd], [sp.x + pw, postTop, sp.z - pd], [sp.x + pw, postBottom, sp.z - pd]],
+    [[sp.x + pw, postBottom, sp.z - pd], [sp.x + pw, postTop, sp.z - pd], [sp.x + pw, postTop, sp.z + pd], [sp.x + pw, postBottom, sp.z + pd]],
+    [[sp.x + pw, postBottom, sp.z + pd], [sp.x + pw, postTop, sp.z + pd], [sp.x - pw, postTop, sp.z + pd], [sp.x - pw, postBottom, sp.z + pd]],
+    [[sp.x - pw, postBottom, sp.z + pd], [sp.x - pw, postTop, sp.z + pd], [sp.x - pw, postTop, sp.z - pd], [sp.x - pw, postBottom, sp.z - pd]],
+    [[sp.x - pw, postTop, sp.z - pd], [sp.x - pw, postTop, sp.z + pd], [sp.x + pw, postTop, sp.z + pd], [sp.x + pw, postTop, sp.z - pd]],
+  ];
+  for (const f of postFaces) {
+    const q = proj(f);
+    if (q) items.push({ pts: q, color: '#5a3a1a', depth: dist3([sp.x, (postBottom + postTop) / 2, sp.z]) });
+  }
+
   // ЗАДНЯЯ часть (тёмная)
   const backDisk = [];
   for (let i = 0; i < seg; i++) backDisk.push(ringPt(backX, (i / seg) * Math.PI * 2));
   const bp = proj(backDisk);
-  if (bp) items.push({ pts: bp, color: '#2a1a05', depth: dist3([backX, y, sp.z]) });
+  if (bp) items.push({ pts: bp, color: '#241603', depth: dist3([backX, y, sp.z]) });
 
-  // РЕБРО: боковая лента между передним и задним ободом
+  // РЕБРО: боковая лента между передним и задним ободом (толстая, хорошо видно)
   for (let i = 0; i < seg; i++) {
     const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
     const quad = [ringPt(backX, a0), ringPt(backX, a1), ringPt(frontX, a1), ringPt(frontX, a0)];
     const q = proj(quad);
-    if (q) items.push({ pts: q, color: '#6b451c', depth: dist3([(frontX + backX) / 2, y + R * Math.sin((a0 + a1) / 2), sp.z + R * Math.cos((a0 + a1) / 2)]) });
+    if (q) items.push({ pts: q, color: '#7a4a1f', depth: dist3([(frontX + backX) / 2, y + R * Math.sin((a0 + a1) / 2), sp.z + R * Math.cos((a0 + a1) / 2)]) });
   }
 
   // ПЕРЕДНЯЯ часть: цветные сегменты, порядок ФИКСИРОВАН (не прокручивается)
-  const fc = project(cam, frontX, y, sp.z);
   for (let i = 0; i < seg; i++) {
     const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
     const tri = [ringPt(frontX, a0), ringPt(frontX, a1), [frontX, y, sp.z]];

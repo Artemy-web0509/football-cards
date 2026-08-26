@@ -709,66 +709,58 @@ function drawWorldRoulette(cam, base) {
   if (!c) return;
 
   const ringPt = (px, a) => [px, y + R * Math.sin(a), sp.z + R * Math.cos(a)];
-  const dist3 = (p) => Math.hypot(p[0] - cam.x, p[1] - cam.y, p[2] - cam.z);
 
-  const items = [];
   const proj = (wp) => {
     const p = projectPoly(cam, wp);
     return p ? p.map(pt => ({ x: pt.x, y: pt.y })) : null;
   };
+  const fillPoly = (pts, color) => {
+    if (!pts || pts.length < 3) return;
+    wc.beginPath();
+    wc.moveTo(pts[0].x, pts[0].y);
+    for (let k = 1; k < pts.length; k++) wc.lineTo(pts[k].x, pts[k].y);
+    wc.closePath();
+    wc.fillStyle = color; wc.fill();
+    wc.strokeStyle = 'rgba(0,0,0,0.35)'; wc.lineWidth = 1; wc.stroke();
+  };
 
-  // Опорный столб (3D-коробка), чтобы колесо не висело в воздухе
+  // Опорный столб (3D-коробка)
   const postBottom = 0, postTop = y - R - 0.2, pw = 0.6, pd = 0.6;
   const postFaces = [
-    // боковые грани (4 шт) + верх
     [[sp.x - pw, postBottom, sp.z - pd], [sp.x - pw, postTop, sp.z - pd], [sp.x + pw, postTop, sp.z - pd], [sp.x + pw, postBottom, sp.z - pd]],
     [[sp.x + pw, postBottom, sp.z - pd], [sp.x + pw, postTop, sp.z - pd], [sp.x + pw, postTop, sp.z + pd], [sp.x + pw, postBottom, sp.z + pd]],
     [[sp.x + pw, postBottom, sp.z + pd], [sp.x + pw, postTop, sp.z + pd], [sp.x - pw, postTop, sp.z + pd], [sp.x - pw, postBottom, sp.z + pd]],
     [[sp.x - pw, postBottom, sp.z + pd], [sp.x - pw, postTop, sp.z + pd], [sp.x - pw, postTop, sp.z - pd], [sp.x - pw, postBottom, sp.z - pd]],
     [[sp.x - pw, postTop, sp.z - pd], [sp.x - pw, postTop, sp.z + pd], [sp.x + pw, postTop, sp.z + pd], [sp.x + pw, postTop, sp.z - pd]],
   ];
-  for (const f of postFaces) {
-    const q = proj(f);
-    if (q) items.push({ pts: q, color: '#5a3a1a', depth: dist3([sp.x, (postBottom + postTop) / 2, sp.z]) });
-  }
+  for (const f of postFaces) { const q = proj(f); if (q) fillPoly(q, '#5a3a1a'); }
 
-  // ЗАДНЯЯ часть (тёмная)
+  // Геометрия колеса
   const backDisk = [];
   for (let i = 0; i < seg; i++) backDisk.push(ringPt(backX, (i / seg) * Math.PI * 2));
-  const bp = proj(backDisk);
-  if (bp) items.push({ pts: bp, color: '#241603', depth: dist3([backX, y, sp.z]) });
-
-  // РЕБРО: боковая лента между передним и задним ободом (толстая, хорошо видно)
+  const backPts = proj(backDisk);
+  const rim = [];
   for (let i = 0; i < seg; i++) {
     const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
-    const quad = [ringPt(backX, a0), ringPt(backX, a1), ringPt(frontX, a1), ringPt(frontX, a0)];
-    const q = proj(quad);
-    if (q) items.push({ pts: q, color: '#7a4a1f', depth: dist3([(frontX + backX) / 2, y + R * Math.sin((a0 + a1) / 2), sp.z + R * Math.cos((a0 + a1) / 2)]) });
+    rim.push([ringPt(backX, a0), ringPt(backX, a1), ringPt(frontX, a1), ringPt(frontX, a0)]);
   }
-
-  // ПЕРЕДНЯЯ часть: цветные сегменты, порядок ФИКСИРОВАН (не прокручивается)
+  const frontTris = [];
   for (let i = 0; i < seg; i++) {
     const a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
-    const tri = [ringPt(frontX, a0), ringPt(frontX, a1), [frontX, y, sp.z]];
-    const tr = proj(tri);
-    if (tr) items.push({
-      pts: tr, color: cols[Math.floor(i / (seg / 5)) % 5],
-      depth: dist3([frontX, y + R * Math.sin((a0 + a1) / 2), sp.z + R * Math.cos((a0 + a1) / 2)]),
-    });
+    frontTris.push({ pts: [ringPt(frontX, a0), ringPt(frontX, a1), [frontX, y, sp.z]], color: cols[Math.floor(i / (seg / 5)) % 5] });
   }
 
-  items.sort((a, b) => b.depth - a.depth);
-  for (const it of items) {
-    if (it.pts.length < 3) continue;
-    wc.beginPath();
-    wc.moveTo(it.pts[0].x, it.pts[0].y);
-    for (let k = 1; k < it.pts.length; k++) wc.lineTo(it.pts[k].x, it.pts[k].y);
-    wc.closePath();
-    wc.fillStyle = it.color;
-    wc.fill();
-    wc.strokeStyle = 'rgba(0,0,0,0.35)';
-    wc.lineWidth = 1;
-    wc.stroke();
+  // Двусторонний рендер без мерцания: сначала дальняя грань, потом ребро,
+  // потом ближняя. Узор зафиксирован в мире и не прокручивается при обходе.
+  const front = cam.x < sp.x;
+  if (front) {
+    if (backPts) fillPoly(backPts, '#241603');
+    for (const q of rim) { const p = proj(q); if (p) fillPoly(p, '#7a4a1f'); }
+    for (const tr of frontTris) { const p = proj(tr.pts); if (p) fillPoly(p, tr.color); }
+  } else {
+    for (const tr of frontTris) { const p = proj(tr.pts); if (p) fillPoly(p, tr.color); }
+    for (const q of rim) { const p = proj(q); if (p) fillPoly(p, '#7a4a1f'); }
+    if (backPts) fillPoly(backPts, '#241603');
   }
 
   // Золотой обод по переднему кругу

@@ -167,16 +167,13 @@ function stepMatch() {
     match.ball.z = 0; match.ball.vz = 0;
   }
 
-  // --- ИИ моих игроков (кроме управляемого) ---
+  // --- ИИ моих игроков (кроме управляемого и вратаря) держат формацию ---
+  const myNear = nearestOf('me');
   for (const p of match.teams.me) {
-    if (p === ctl) continue;
-    let tx = p.homeX, ty = p.homeY;
-    const dp = Math.hypot(p.x - match.ball.x, p.y - match.ball.y);
-    if (match.possession === 'bot' && dp < 0.32) { tx = match.ball.x; ty = match.ball.y; }
-    else if (match.possession === 'me') {
-      // идём вперёд, но не толпимся у мяча
-      tx = clamp(p.homeX + 0.03, MATCH_L, MATCH_R); ty = p.homeY;
-    }
+    if (p === ctl || p.pos === 'GK') continue;
+    let tx, ty;
+    if (p === myNear && match.possession !== 'me') { tx = match.ball.x; ty = match.ball.y; }
+    else { const t = formationTarget('me', p); tx = t.tx; ty = t.ty; }
     moveToward(p, tx, ty, dt);
   }
 
@@ -230,38 +227,59 @@ function moveToward(p, tx, ty, dt) {
   p.y = clamp(p.y, MATCH_T + 0.015, MATCH_B - 0.015);
 }
 
+function nearestOf(side) {
+  let best = null, bd = 1e9;
+  for (const p of match.teams[side]) {
+    const d = Math.hypot(p.x - match.ball.x, p.y - match.ball.y);
+    if (d < bd) { bd = d; best = p; }
+  }
+  return best;
+}
+function formationTarget(side, p) {
+  const ball = match.ball;
+  const attacking = (side === 'me' && match.possession === 'me') || (side === 'bot' && match.possession === 'bot');
+  const fwd = side === 'me' ? 0.06 : -0.06;
+  const back = side === 'me' ? -0.04 : 0.04;
+  const tx = p.homeX + (attacking ? fwd : back);
+  const ty = p.homeY + (ball.y - p.homeY) * (attacking ? 0.2 : 0.15);
+  return { tx: clamp(tx, MATCH_L + 0.015, MATCH_R - 0.015), ty: clamp(ty, MATCH_T + 0.015, MATCH_B - 0.015) };
+}
+function stepBotGK(p, dt) {
+  p.x = clamp(MATCH_R - 0.045, MATCH_L + 0.015, MATCH_R - 0.015);
+  if (match.ball.x > 0.65) p.y = clamp(match.ball.y, MATCH_GOAL_Y0, MATCH_GOAL_Y1);
+  else p.y += (0.5 - p.y) * Math.min(1, dt * 1.5);
+}
 function stepBotAI(dt) {
   const ball = match.ball;
-  const nearest = closestToBall('bot');
   if (match.botShotCooldown > 0) match.botShotCooldown -= dt;
-
+  const near = nearestOf('bot');
   for (const p of match.teams.bot) {
-    let tx = p.homeX, ty = p.homeY;
-    const dp = Math.hypot(p.x - ball.x, p.y - ball.y);
-    const isNearest = p === nearest;
-    if (match.possession === 'bot' && isNearest) {
-      // преследуем мяч, чтобы ударить
-      tx = ball.x; ty = ball.y;
-      if (dp < 0.04 && match.botShotCooldown <= 0) {
-        // бьём по моим воротам
-        const power = 0.55 + p.rating * 0.0025;
-        const aim = Math.random() < (0.55 + p.rating * 0.002) ? 0.75 : 0.25;
-        const tyTarget = MATCH_GOAL_Y0 + (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * (Math.random() < aim ? 0.5 : (Math.random() < 0.5 ? 0.12 : 0.88));
-        const dx = MATCH_L - ball.x, dy = tyTarget - ball.y;
-        const d = Math.hypot(dx, dy) || 1;
-        ball.vx = (dx / d) * power * 0.85;
-        ball.vy = (dy / d) * power * 0.85;
-        ball.vz = clamp(power * 0.4, 2.5, 7);
-        ball.z = 0.12;
-        match.possession = 'me';
-        match.botShotCooldown = 1.4;
-        addLog('💨 Соперник бьёт по воротам!', 'danger');
-      }
-    } else if (match.possession === 'me' && dp < 0.25) {
-      tx = ball.x; ty = ball.y;
-    } else if (dp < 0.4 && !isNearest) {
-      // поддержка: ближе к мячу
-      tx = ball.x + (p.x - ball.x) * 0.5; ty = ball.y + (p.y - ball.y) * 0.5;
+    if (p.pos === 'GK') { stepBotGK(p, dt); continue; }
+    let tx, ty;
+    if (match.possession === 'bot') {
+      if (p === near) {
+        tx = ball.x; ty = ball.y;
+        const dp = Math.hypot(p.x - ball.x, p.y - ball.y);
+        if (dp < 0.04) {
+          ball.x = p.x + (ball.x > p.x ? 0.015 : -0.015);
+          ball.y = p.y + (ball.y > p.y ? 0.012 : -0.012);
+          ball.z = 0; ball.vz = 0;
+          if (match.botShotCooldown <= 0) {
+            const power = 0.55 + p.rating * 0.0025;
+            const aim = Math.random() < (0.55 + p.rating * 0.002) ? 0.75 : 0.25;
+            const tyTarget = MATCH_GOAL_Y0 + (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * (Math.random() < aim ? 0.5 : (Math.random() < 0.5 ? 0.12 : 0.88));
+            const dx = MATCH_L - ball.x, dy = tyTarget - ball.y;
+            const d = Math.hypot(dx, dy) || 1;
+            ball.vx = (dx / d) * power * 0.85; ball.vy = (dy / d) * power * 0.85;
+            ball.vz = clamp(power * 0.4, 2.5, 7); ball.z = 0.12;
+            match.possession = 'me'; match.botShotCooldown = 1.4;
+            addLog('💨 Соперник бьёт по воротам!', 'danger');
+          }
+        }
+      } else { const t = formationTarget('bot', p); tx = t.tx; ty = t.ty; }
+    } else {
+      if (p === near) { tx = ball.x; ty = ball.y; }
+      else { const t = formationTarget('bot', p); tx = t.tx; ty = t.ty; }
     }
     moveToward(p, tx, ty, dt);
   }
@@ -398,7 +416,7 @@ function mWX(xn) { return (xn - 0.5) * PITCH_LEN; }
 function mWZ(yn) { return (yn - 0.5) * PITCH_WID; }
 function mHalfW() { return mW / 2; }
 function mHalfH() { return mH / 2; }
-function mFocal() { const fov = 52 * Math.PI / 180; return (mW / 2) / Math.tan(fov / 2); }
+function mFocal() { const fov = 58 * Math.PI / 180; return (mW / 2) / Math.tan(fov / 2); }
 
 function mEnsureCam() {
   if (!match.cam) match.cam = { cx: -28, cy: 15, cz: 16, tx: 0, ty: 1.6, tz: 0 };
@@ -407,9 +425,9 @@ function mUpdateCam() {
   mEnsureCam();
   const bX = mWX(match.ball.x), bZ = mWZ(match.ball.y);
   const dir = match.possession === 'me' ? 1 : -1;
-  const tx = bX + dir * 8, tz = bZ * 0.45;
-  const cx = bX - dir * 24, cz = bZ * 0.45 + 12;
-  const cy = 15;
+  const tx = bX + dir * 10, tz = bZ * 0.45;
+  const cx = bX - dir * 32, cz = bZ * 0.45 + 15;
+  const cy = 19;
   const c = match.cam, k = 0.09;
   c.cx += (cx - c.cx) * k; c.cy += (cy - c.cy) * k; c.cz += (cz - c.cz) * k;
   c.tx += (tx - c.tx) * k; c.ty += (1.6 - c.ty) * k; c.tz += (tz - c.tz) * k;

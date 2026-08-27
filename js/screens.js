@@ -432,43 +432,38 @@ function onSpinLand(p) {
     secret: '👑 СЕКРЕТ!!!',
     bingi: '🌈 БИНГИ!!! 1 ИЗ 1000!!!',
   };
+  // Выпавший игрок сразу забирается в рюкзак (спин уже оплачен SPIN_COST)
+  collectSpinPlayer(p);
   const box = $('#spin-result');
-  const price = buyPrice(p);
-  const afford = state.coins >= price;
   box.innerHTML = `
     <div class="result-title">${titles[p.rarity]}</div>
     ${cardHTML(p)}
-    <div class="result-price">Выкуп карточки: <b>${price} 💰</b>${afford ? '' : '<br>Не хватает монет!'}</div>
+    <div class="result-note">✅ Забрано в рюкзак 🎒${p.shadow ? ' (реальный занят — выдан запасной)' : ''}</div>
     <div class="result-actions">
-      <button class="btn btn-primary" id="take-btn" ${afford ? '' : 'disabled'}>${afford ? '🤚 Забрать за ' + price + ' 💰' : 'Не хватает 💰'}</button>
+      <button class="btn btn-primary" id="take-btn">🤚 ОК</button>
     </div>`;
   box.classList.remove('hidden');
   box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  $('#take-btn').onclick = async () => {
-    if (state.coins < price) {
-      toast('Не хватает монет на выкуп! Нужно ' + price + ' 💰');
-      flashBtn($('#take-btn'));
-      return;
-    }
-    claimLocal(player);
-    const res = await claimRemote(player);
+  $('#take-btn').onclick = () => closeScreen();
+}
+
+function collectSpinPlayer(raw) {
+  let p = raw;
+  claimLocal(p);
+  (async () => {
+    const res = await claimRemote(p);
     if (res === 'TAKEN') {
-      toast('❌ Эту карточку только что забрали — монеты за спин возвращены');
-      delete claimedKeys[player.key];
-      state.coins += SPIN_COST;
-      save(); renderTop();
-      renderSpinnerPanel();
-      return;
+      // кто-то другой уже занял этого реального игрока — выдаём запасного
+      p = genShadow(p.rarity, p.pos);
+      claimLocal(p);
+      await claimRemote(p);
     }
-    state.coins -= price;
-    state.players.push(player);
-    if (state.starters.length < 11) state.starters.push(player.id);
+    state.players.push(p);
+    if (state.starters.length < 11) state.starters.push(p.id);
     ensureLineup();
     save();
     renderTop();
-    closeScreen();
-    toast('✅ ' + player.name + ' забран за ' + price + ' 💰 — теперь в рюкзаке. Поставь на поле через 🎒 или E у поля');
-  };
+  })();
 }
 
 function setHeld(p) {

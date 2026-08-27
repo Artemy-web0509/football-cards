@@ -432,38 +432,45 @@ function onSpinLand(p) {
     secret: '👑 СЕКРЕТ!!!',
     bingi: '🌈 БИНГИ!!! 1 ИЗ 1000!!!',
   };
-  // Выпавший игрок сразу забирается в рюкзак (спин уже оплачен SPIN_COST)
-  collectSpinPlayer(p);
+  const price = buyPrice(p);
+  const afford = state.coins >= price;
   const box = $('#spin-result');
   box.innerHTML = `
     <div class="result-title">${titles[p.rarity]}</div>
     ${cardHTML(p)}
-    <div class="result-note">✅ Забрано в рюкзак 🎒${p.shadow ? ' (реальный занят — выдан запасной)' : ''}</div>
+    <div class="result-price">Выкуп карточки: <b>${price} 💰</b>${afford ? '' : '<br>Не хватает монет!'}</div>
     <div class="result-actions">
-      <button class="btn btn-primary" id="take-btn">🤚 ОК</button>
+      <button class="btn btn-primary" id="take-btn" ${afford ? '' : 'disabled'}>${afford ? '🤚 Забрать за ' + price + ' 💰' : 'Не хватает 💰'}</button>
     </div>`;
   box.classList.remove('hidden');
   box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  $('#take-btn').onclick = () => closeScreen();
-}
-
-function collectSpinPlayer(raw) {
-  let p = raw;
-  claimLocal(p);
-  (async () => {
+  $('#take-btn').onclick = async () => {
+    const cur = buyPrice(p);
+    if (state.coins < cur) {
+      toast('Не хватает монет! Нужно ' + cur + ' 💰');
+      flashBtn($('#take-btn'));
+      return;
+    }
+    state.coins -= cur;
+    renderTop();
+    // помечаем занятость (best-effort), но карточка выдаётся в любом случае,
+    // т.к. за неё заплачено. Если реальный игрок уже занят кем-то — выдаём запасного.
+    let finalP = p;
+    claimLocal(p);
     const res = await claimRemote(p);
     if (res === 'TAKEN') {
-      // кто-то другой уже занял этого реального игрока — выдаём запасного
-      p = genShadow(p.rarity, p.pos);
-      claimLocal(p);
-      await claimRemote(p);
+      finalP = genShadow(p.rarity, p.pos);
+      claimLocal(finalP);
+      await claimRemote(finalP);
     }
-    state.players.push(p);
-    if (state.starters.length < 11) state.starters.push(p.id);
+    state.players.push(finalP);
+    if (state.starters.length < 11) state.starters.push(finalP.id);
     ensureLineup();
     save();
     renderTop();
-  })();
+    closeScreen();
+    toast('✅ ' + finalP.name + ' забран за ' + cur + ' 💰 — теперь в рюкзаке 🎒');
+  };
 }
 
 function setHeld(p) {

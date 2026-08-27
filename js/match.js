@@ -26,6 +26,7 @@ function startPvpMatch(otherNick) {
 const MATCH_L = 0.05, MATCH_R = 0.95, MATCH_T = 0.08, MATCH_B = 0.92;
 const MATCH_GOAL_Y0 = 0.36, MATCH_GOAL_Y1 = 0.64;
 const MATCH_DURATION = 240; // секунд реального времени на весь матч (90 игровых минут)
+const MATCH_GRAVITY = 9;    // гравитация для дуг пасов/ударов (метры/с^2)
 
 // ---------- Состояние матча ----------
 function beginMatch(o) {
@@ -39,7 +40,7 @@ function beginMatch(o) {
     subsUsed: 0, paused: false, running: true, timer: null,
     timeLeft: MATCH_DURATION,
     teams: { me: [], bot: [] },
-    ball: { x: 0.5, y: 0.5, vx: 0, vy: 0 },
+    ball: { x: 0.5, y: 0.5, vx: 0, vy: 0, z: 0, vz: 0 },
     possession: 'me',
     lastGoalScorer: null,
     controlIdx: 0,
@@ -79,7 +80,7 @@ function buildMatchTeams() {
 
 function resetKickoff() {
   const mid = (MATCH_L + MATCH_R) / 2;
-  match.ball = { x: mid, y: 0.5, vx: 0, vy: 0 };
+  match.ball = { x: mid, y: 0.5, vx: 0, vy: 0, z: 0, vz: 0 };
   for (const side of ['me', 'bot']) {
     for (const p of match.teams[side]) {
       p.x = p.homeX + (Math.random() - 0.5) * 0.04;
@@ -158,11 +159,12 @@ function stepMatch() {
     ctl.x = clamp(ctl.x + mx * playerSpeed(ctl) * dt, MATCH_L + 0.015, MATCH_R - 0.015);
     ctl.y = clamp(ctl.y + my * playerSpeed(ctl) * dt, MATCH_T + 0.015, MATCH_B - 0.015);
   }
-  // Ведение мяча: если мяч у ног, он едет за игроком
+  // Ведение мяча: если мяч у ног, он едет за игроком (по земле)
   const dToBall = Math.hypot(ctl.x - match.ball.x, ctl.y - match.ball.y);
-  if (dToBall < 0.035 && match.possession === 'me') {
+  if (dToBall < 0.035 && match.possession === 'me' && match.ball.z < 0.1) {
     match.ball.x = ctl.x + (match.ball.x > ctl.x ? 0.015 : -0.015);
     match.ball.y = ctl.y + (match.ball.y > ctl.y ? 0.012 : -0.012);
+    match.ball.z = 0; match.ball.vz = 0;
   }
 
   // --- ИИ моих игроков (кроме управляемого) ---
@@ -181,11 +183,19 @@ function stepMatch() {
   // --- ИИ соперника ---
   stepBotAI(dt);
 
-  // --- Мяч: инерция ---
+  // --- Мяч: инерция + гравитация (дуги пасов/ударов) ---
+  const air = match.ball.z > 0.05;
+  const damp = air ? 0.5 : 0.35;
   match.ball.x += match.ball.vx * dt;
   match.ball.y += match.ball.vy * dt;
-  match.ball.vx *= Math.pow(0.35, dt);
-  match.ball.vy *= Math.pow(0.35, dt);
+  match.ball.z += match.ball.vz * dt;
+  match.ball.vz -= MATCH_GRAVITY * dt;
+  if (match.ball.z <= 0) {
+    match.ball.z = 0;
+    match.ball.vz = match.ball.vz < -1 ? -match.ball.vz * 0.45 : 0;
+  }
+  match.ball.vx *= Math.pow(damp, dt);
+  match.ball.vy *= Math.pow(damp, dt);
   if (Math.abs(match.ball.vx) < 0.001 && Math.abs(match.ball.vy) < 0.001) { match.ball.vx = 0; match.ball.vy = 0; }
   match.ball.x = clamp(match.ball.x, MATCH_L + 0.01, MATCH_R - 0.01);
   match.ball.y = clamp(match.ball.y, MATCH_T + 0.01, MATCH_B - 0.01);
@@ -241,6 +251,8 @@ function stepBotAI(dt) {
         const d = Math.hypot(dx, dy) || 1;
         ball.vx = (dx / d) * power * 0.85;
         ball.vy = (dy / d) * power * 0.85;
+        ball.vz = clamp(power * 0.4, 2.5, 7);
+        ball.z = 0.12;
         match.possession = 'me';
         match.botShotCooldown = 1.4;
         addLog('💨 Соперник бьёт по воротам!', 'danger');
@@ -272,9 +284,11 @@ function doPass() {
   if (!best) return;
   const dx = best.x - ctl.x, dy = best.y - ctl.y;
   const dl = Math.hypot(dx, dy) || 1;
-  const power = 0.75;
+  const power = 0.85;
   match.ball.vx = (dx / dl) * power;
   match.ball.vy = (dy / dl) * power;
+  match.ball.vz = clamp(power * 0.6, 2, 6);
+  match.ball.z = 0.12;
   match.kickCooldown = 0.25;
   addLog('🎯 Пас ' + ctl.name + ' → ' + best.name, 'sub');
 }
@@ -289,11 +303,13 @@ function doShoot() {
   const tyTarget = MATCH_GOAL_Y0 + (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * (Math.random() < 0.5 ? 0.22 : 0.78);
   const dx = MATCH_R - ctl.x, dy = tyTarget - ctl.y;
   const dl = Math.hypot(dx, dy) || 1;
-  const power = 0.95 + ctl.rating * 0.004;
+  const power = 1.15 + ctl.rating * 0.004;
   const baseAcc = 0.82 + ctl.rating * 0.001;
   const acc = Math.random() < baseAcc ? 1 : 0.55;
   match.ball.vx = (dx / dl) * power * acc;
   match.ball.vy = (dy / dl) * power * acc;
+  match.ball.vz = clamp(power * 0.4, 2.5, 7);
+  match.ball.z = 0.12;
   match.kickCooldown = 0.4;
   addLog('⚽ Удар ' + ctl.name + ' по воротам!', 'goal');
 }
@@ -302,7 +318,7 @@ function checkGoal() {
   const b = match.ball;
   if (match.goalLock) return;
   // мои ворота слева
-  if (b.x <= MATCH_L + 0.012 && b.y > MATCH_GOAL_Y0 && b.y < MATCH_GOAL_Y1) {
+  if (b.x <= MATCH_L + 0.012 && b.y > MATCH_GOAL_Y0 && b.y < MATCH_GOAL_Y1 && b.z < 3) {
     match.goalLock = true;
     match.botGoals++;
     const sc = closestToBall('bot');
@@ -312,7 +328,7 @@ function checkGoal() {
     return;
   }
   // ворота соперника справа
-  if (b.x >= MATCH_R - 0.012 && b.y > MATCH_GOAL_Y0 && b.y < MATCH_GOAL_Y1) {
+  if (b.x >= MATCH_R - 0.012 && b.y > MATCH_GOAL_Y0 && b.y < MATCH_GOAL_Y1 && b.z < 3) {
     match.goalLock = true;
     match.myGoals++;
     const sc = closestToBall('me');
@@ -367,60 +383,180 @@ function renderMatchScreen() {
   updateMatchUI();
 }
 
-// ---------- Визуализация ----------
+// ---------- Визуализация 3D (вид как в FIFA) ----------
 const mc = $('#match-canvas');
 const mctx = mc.getContext('2d');
-let mW = 560, mH = 230;
-function resizeMatch() {
-  mW = mc.width = mc.clientWidth || 560;
-  mH = mc.height = 230;
-}
+let mW = 560, mH = 360;
+const PITCH_LEN = 105, PITCH_WID = 68;
 
-function px(x) { return (x - MATCH_L) / (MATCH_R - MATCH_L) * mW; }
-function py(y) { return (y - MATCH_T) / (MATCH_B - MATCH_T) * mH; }
+function resizeMatch() {
+  mW = mc.clientWidth || 560;
+  mH = mc.clientHeight || 360;
+  mc.width = mW; mc.height = mH;
+}
+function mWX(xn) { return (xn - 0.5) * PITCH_LEN; }
+function mWZ(yn) { return (yn - 0.5) * PITCH_WID; }
+function mHalfW() { return mW / 2; }
+function mHalfH() { return mH / 2; }
+function mFocal() { const fov = 52 * Math.PI / 180; return (mW / 2) / Math.tan(fov / 2); }
+
+function mEnsureCam() {
+  if (!match.cam) match.cam = { cx: -28, cy: 15, cz: 16, tx: 0, ty: 1.6, tz: 0 };
+}
+function mUpdateCam() {
+  mEnsureCam();
+  const bX = mWX(match.ball.x), bZ = mWZ(match.ball.y);
+  const dir = match.possession === 'me' ? 1 : -1;
+  const tx = bX + dir * 8, tz = bZ * 0.45;
+  const cx = bX - dir * 24, cz = bZ * 0.45 + 12;
+  const cy = 15;
+  const c = match.cam, k = 0.09;
+  c.cx += (cx - c.cx) * k; c.cy += (cy - c.cy) * k; c.cz += (cz - c.cz) * k;
+  c.tx += (tx - c.tx) * k; c.ty += (1.6 - c.ty) * k; c.tz += (tz - c.tz) * k;
+}
+function mBasis() {
+  const c = match.cam;
+  let fx = c.tx - c.cx, fy = c.ty - c.cy, fz = c.tz - c.cz;
+  const fl = Math.hypot(fx, fy, fz) || 1; fx /= fl; fy /= fl; fz /= fl;
+  let rx = -fz, ry = 0, rz = fx;
+  const rl = Math.hypot(rx, ry, rz) || 1; rx /= rl; ry /= rl; rz /= rl;
+  const ux = ry * fz - rz * fy, uy = rz * fx - rx * fz, uz = rx * fy - ry * fx;
+  return { fx, fy, fz, rx, ry, rz, ux, uy, uz };
+}
+function mProject(X, Y, Z) {
+  const c = match.cam, B = match._basis;
+  const dx = X - c.cx, dy = Y - c.cy, dz = Z - c.cz;
+  const depth = dx * B.fx + dy * B.fy + dz * B.fz;
+  if (depth < 0.5) return null;
+  const cx_ = dx * B.rx + dy * B.ry + dz * B.rz;
+  const cy_ = dx * B.ux + dy * B.uy + dz * B.uz;
+  const f = mFocal();
+  return { x: mHalfW() + (cx_ / depth) * f, y: mHalfH() - (cy_ / depth) * f, depth, scale: f / depth };
+}
+function mDepth(X, Z) {
+  const c = match.cam, B = match._basis;
+  const dx = X - c.cx, dy = -c.cy, dz = Z - c.cz;
+  return dx * B.fx + dy * B.fy + dz * B.fz;
+}
+function mQuad(pts, color) {
+  const sp = pts.map(p => mProject(p[0], p[1], p[2]));
+  if (sp.some(s => !s)) return;
+  mctx.beginPath(); mctx.moveTo(sp[0].x, sp[0].y);
+  for (let i = 1; i < sp.length; i++) mctx.lineTo(sp[i].x, sp[i].y);
+  mctx.closePath(); mctx.fillStyle = color; mctx.fill();
+}
+function mLine(x0, z0, x1, z1) {
+  const a = mProject(x0, 0, z0), b = mProject(x1, 0, z1);
+  if (!a || !b) return;
+  mctx.beginPath(); mctx.moveTo(a.x, a.y); mctx.lineTo(b.x, b.y); mctx.stroke();
+}
+function mCircle(cx, cz, r, seg) {
+  mctx.beginPath();
+  for (let i = 0; i <= seg; i++) {
+    const a = (i / seg) * Math.PI * 2;
+    const p = mProject(cx + Math.cos(a) * r, 0, cz + Math.sin(a) * r);
+    if (!p) continue;
+    if (i === 0) mctx.moveTo(p.x, p.y); else mctx.lineTo(p.x, p.y);
+  }
+  mctx.stroke();
+}
+function mRect(x0, z0, w, d) {
+  mLine(x0, z0, x0 + w, z0); mLine(x0 + w, z0, x0 + w, z0 + d);
+  mLine(x0 + w, z0 + d, x0, z0 + d); mLine(x0, z0 + d, x0, z0);
+}
+function mGoal(x, z0, w) {
+  const depth = 2.4, h = 2.44;
+  const back = x + Math.sign(x) * depth;
+  mLine(x, z0, back, z0);
+  mLine(back, z0, back, z0 + w);
+  mLine(back, z0 + w, x, z0 + w);
+  mLine(x, z0 + w, x, z0);
+  const a = mProject(x, h, z0), b = mProject(x, h, z0 + w);
+  if (a && b) { mctx.beginPath(); mctx.moveTo(a.x, a.y); mctx.lineTo(b.x, b.y); mctx.stroke(); }
+}
 
 function renderMatchCanvas() {
-  mctx.fillStyle = '#2c7a3f'; mctx.fillRect(0, 0, mW, mH);
-  for (let i = 0; i < 8; i++) {
-    if (i % 2 === 0) { mctx.fillStyle = 'rgba(255,255,255,0.04)'; mctx.fillRect(i * mW / 8, 0, mW / 8, mH); }
+  mUpdateCam();
+  match._basis = mBasis();
+  const g = mctx.createLinearGradient(0, 0, 0, mH);
+  g.addColorStop(0, '#0a1730'); g.addColorStop(0.55, '#10361f'); g.addColorStop(1, '#0c2a18');
+  mctx.fillStyle = g; mctx.fillRect(0, 0, mW, mH);
+  drawPitch3D();
+  const items = [];
+  for (const side of ['me', 'bot']) {
+    for (const p of match.teams[side]) {
+      const isCtl = (side === 'me' && match.teams.me[match.controlIdx] === p);
+      items.push({ depth: mDepth(mWX(p.x), mWZ(p.y)), draw: () => mDrawPlayer(p, side, isCtl) });
+    }
   }
-  mctx.strokeStyle = 'rgba(255,255,255,0.7)'; mctx.lineWidth = 2;
-  mctx.strokeRect(px(MATCH_L), py(MATCH_T), mW, mH);
-  mctx.beginPath(); mctx.moveTo(px(0.5), py(MATCH_T)); mctx.lineTo(px(0.5), py(MATCH_B)); mctx.stroke();
-  mctx.beginPath(); mctx.arc(px(0.5), py(0.5), mH * 0.12, 0, Math.PI * 2); mctx.stroke();
-  // штрафные и ворота
-  mctx.strokeRect(px(MATCH_L), py(MATCH_GOAL_Y0), mW * 0.16, (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * mH / (MATCH_B - MATCH_T));
-  mctx.strokeRect(px(MATCH_R) - mW * 0.16, py(MATCH_GOAL_Y0), mW * 0.16, (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * mH / (MATCH_B - MATCH_T));
-  mctx.fillStyle = 'rgba(255,255,255,0.25)';
-  mctx.fillRect(px(MATCH_L), py(MATCH_GOAL_Y0), 6, (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * mH / (MATCH_B - MATCH_T));
-  mctx.fillRect(px(MATCH_R) - 6, py(MATCH_GOAL_Y0), 6, (MATCH_GOAL_Y1 - MATCH_GOAL_Y0) * mH / (MATCH_B - MATCH_T));
-
-  drawTeamField('me', '#3f8efc');
-  drawTeamField('bot', '#ff5d5d');
-
-  // мяч
-  mctx.beginPath(); mctx.arc(px(match.ball.x), py(match.ball.y), 6, 0, Math.PI * 2);
-  mctx.fillStyle = '#fff'; mctx.fill();
-  mctx.strokeStyle = '#333'; mctx.lineWidth = 1; mctx.stroke();
+  items.push({ depth: mDepth(mWX(match.ball.x), mWZ(match.ball.y)), draw: mDrawBall });
+  items.sort((a, b) => b.depth - a.depth);
+  for (const it of items) it.draw();
 }
 
-function drawTeamField(side, color) {
-  const ctl = match.teams[side][match.controlIdx];
-  for (const p of match.teams[side]) {
-    const isCtl = (side === 'me' && p === ctl);
-    const cx = px(p.x), cy = py(p.y);
-    mctx.beginPath(); mctx.arc(cx, cy, isCtl ? 12 : 9, 0, Math.PI * 2);
-    mctx.fillStyle = color; mctx.fill();
-    mctx.strokeStyle = 'rgba(255,255,255,.8)'; mctx.lineWidth = isCtl ? 3 : 1;
-    mctx.stroke();
-    if (isCtl) {
-      mctx.beginPath(); mctx.arc(cx, cy, 16, 0, Math.PI * 2);
-      mctx.strokeStyle = '#ffe66b'; mctx.lineWidth = 2; mctx.stroke();
-    }
-    mctx.fillStyle = '#fff'; mctx.font = 'bold 9px sans-serif';
-    mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
-    mctx.fillText(p.rating, cx, cy);
+function drawPitch3D() {
+  const hl = PITCH_LEN / 2, hw = PITCH_WID / 2;
+  mQuad([[-hl, 0, -hw], [-hl, 0, hw], [hl, 0, hw], [hl, 0, -hw]], '#1f7a36');
+  const N = 14;
+  for (let i = 0; i < N; i++) {
+    const x0 = -hl + (2 * hl) * (i / N), x1 = -hl + (2 * hl) * ((i + 1) / N);
+    mQuad([[x0, 0, -hw], [x0, 0, hw], [x1, 0, hw], [x1, 0, -hw]], i % 2 ? '#1c6f31' : '#23853d');
   }
+  mctx.strokeStyle = 'rgba(255,255,255,0.85)'; mctx.lineWidth = 2;
+  mLine(-hl, -hw, hl, -hw); mLine(hl, -hw, hl, hw); mLine(hl, hw, -hl, hw); mLine(-hl, hw, -hl, -hw);
+  mLine(0, -hw, 0, hw);
+  mCircle(0, 0, 9.15, 28);
+  const boxD = 16.5, boxW = 40;
+  mRect(-hl, -boxW / 2, boxD, boxW);
+  mRect(hl - boxD, -boxW / 2, boxD, boxW);
+  mGoal(-hl, -7.32 / 2, 7.32);
+  mGoal(hl, -7.32 / 2, 7.32);
+}
+
+function mDrawPlayer(p, side, isCtl) {
+  const X = mWX(p.x), Z = mWZ(p.y);
+  const foot = mProject(X, 0, Z); if (!foot) return;
+  const head = mProject(X, 1.8, Z); if (!head) return;
+  const sc = foot.scale;
+  mctx.fillStyle = 'rgba(0,0,0,0.28)';
+  mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(3, 0.6 * sc), Math.max(1.5, 0.2 * sc), 0, 0, Math.PI * 2); mctx.fill();
+  const col = side === 'me' ? '#3f8efc' : '#ff5d5d';
+  const dark = side === 'me' ? '#1f5fb0' : '#b02424';
+  mctx.lineCap = 'round';
+  mctx.strokeStyle = dark; mctx.lineWidth = Math.max(3, 0.6 * sc);
+  mctx.beginPath(); mctx.moveTo(foot.x, foot.y); mctx.lineTo(head.x, head.y); mctx.stroke();
+  mctx.strokeStyle = col; mctx.lineWidth = Math.max(2, 0.45 * sc);
+  mctx.beginPath(); mctx.moveTo(foot.x, foot.y); mctx.lineTo(head.x, head.y); mctx.stroke();
+  const hr = Math.max(2.5, 0.3 * sc);
+  mctx.beginPath(); mctx.arc(head.x, head.y, hr, 0, Math.PI * 2);
+  mctx.fillStyle = side === 'me' ? '#cfe3ff' : '#ffd6d6'; mctx.fill();
+  mctx.strokeStyle = dark; mctx.lineWidth = 1.5; mctx.stroke();
+  if (isCtl) {
+    mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(5, 0.85 * sc), Math.max(2.5, 0.28 * sc), 0, 0, Math.PI * 2);
+    mctx.strokeStyle = '#ffe66b'; mctx.lineWidth = 2.5; mctx.stroke();
+  }
+  mctx.font = 'bold ' + Math.max(8, Math.round(0.42 * sc)) + 'px sans-serif';
+  mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+  mctx.lineWidth = 2.5; mctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  mctx.strokeText(p.rating, head.x, head.y - hr - 6);
+  mctx.fillStyle = '#fff'; mctx.fillText(p.rating, head.x, head.y - hr - 6);
+}
+
+function mDrawBall() {
+  const X = mWX(match.ball.x), Z = mWZ(match.ball.y);
+  const h = match.ball.z;
+  const foot = mProject(X, 0, Z); if (!foot) return;
+  const sc = foot.scale;
+  const shrink = clamp(1 - h / 12, 0.3, 1);
+  mctx.fillStyle = 'rgba(0,0,0,0.3)';
+  mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(2, 0.45 * sc * shrink), Math.max(1, 0.16 * sc * shrink), 0, 0, Math.PI * 2); mctx.fill();
+  const c = mProject(X, h + 0.4, Z); if (!c) return;
+  const r = Math.max(3, 0.42 * c.scale);
+  mctx.beginPath(); mctx.arc(c.x, c.y, r, 0, Math.PI * 2);
+  mctx.fillStyle = '#fff'; mctx.fill();
+  mctx.strokeStyle = '#222'; mctx.lineWidth = 1.5; mctx.stroke();
+  mctx.beginPath(); mctx.arc(c.x, c.y, r * 0.34, 0, Math.PI * 2);
+  mctx.fillStyle = '#222'; mctx.fill();
 }
 
 function updateMatchVisual(dt) {}

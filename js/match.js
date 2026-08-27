@@ -416,21 +416,21 @@ function mWX(xn) { return (xn - 0.5) * PITCH_LEN; }
 function mWZ(yn) { return (yn - 0.5) * PITCH_WID; }
 function mHalfW() { return mW / 2; }
 function mHalfH() { return mH / 2; }
-function mFocal() { const fov = 58 * Math.PI / 180; return (mW / 2) / Math.tan(fov / 2); }
+function mFocal() { const fov = 64 * Math.PI / 180; return (mW / 2) / Math.tan(fov / 2); }
 
 function mEnsureCam() {
-  if (!match.cam) match.cam = { cx: -28, cy: 15, cz: 16, tx: 0, ty: 1.6, tz: 0 };
+  if (!match.cam) match.cam = { cx: -17, cy: 11, cz: 7, tx: 8, ty: 1.3, tz: 0 };
 }
 function mUpdateCam() {
   mEnsureCam();
   const bX = mWX(match.ball.x), bZ = mWZ(match.ball.y);
   const dir = match.possession === 'me' ? 1 : -1;
-  const tx = bX + dir * 10, tz = bZ * 0.45;
-  const cx = bX - dir * 32, cz = bZ * 0.45 + 15;
-  const cy = 19;
+  const tx = bX + dir * 9, tz = bZ * 0.4;
+  const cx = bX - dir * 17, cz = bZ * 0.4 + 7;
+  const cy = 11;
   const c = match.cam, k = 0.09;
   c.cx += (cx - c.cx) * k; c.cy += (cy - c.cy) * k; c.cz += (cz - c.cz) * k;
-  c.tx += (tx - c.tx) * k; c.ty += (1.6 - c.ty) * k; c.tz += (tz - c.tz) * k;
+  c.tx += (tx - c.tx) * k; c.ty += (1.3 - c.ty) * k; c.tz += (tz - c.tz) * k;
 }
 function mBasis() {
   const c = match.cam;
@@ -456,16 +456,23 @@ function mDepth(X, Z) {
   const dx = X - c.cx, dy = -c.cy, dz = Z - c.cz;
   return dx * B.fx + dy * B.fy + dz * B.fz;
 }
-function mQuad(pts, color) {
+function mFog(depth) { return clamp((depth - 26) / 55, 0, 0.6); }
+function mQuad(pts, color, depth) {
   const sp = pts.map(p => mProject(p[0], p[1], p[2]));
   if (sp.some(s => !s)) return;
   mctx.beginPath(); mctx.moveTo(sp[0].x, sp[0].y);
   for (let i = 1; i < sp.length; i++) mctx.lineTo(sp[i].x, sp[i].y);
-  mctx.closePath(); mctx.fillStyle = color; mctx.fill();
+  mctx.closePath();
+  if (depth != null) {
+    const a = mFog(depth);
+    if (a > 0) { mctx.save(); mctx.globalAlpha = 1; mctx.fillStyle = color; mctx.fill(); mctx.fillStyle = 'rgba(12,42,24,' + a + ')'; mctx.fill(); mctx.restore(); return; }
+  }
+  mctx.fillStyle = color; mctx.fill();
 }
-function mLine(x0, z0, x1, z1) {
+function mLine(x0, z0, x1, z1, depth) {
   const a = mProject(x0, 0, z0), b = mProject(x1, 0, z1);
   if (!a || !b) return;
+  if (depth != null) { const a2 = mFog(depth); if (a2 > 0) mctx.strokeStyle = 'rgba(255,255,255,' + (0.85 * (1 - a2)) + ')'; }
   mctx.beginPath(); mctx.moveTo(a.x, a.y); mctx.lineTo(b.x, b.y); mctx.stroke();
 }
 function mCircle(cx, cz, r, seg) {
@@ -534,25 +541,35 @@ function drawPitch3D() {
 function mDrawPlayer(p, side, isCtl) {
   const X = mWX(p.x), Z = mWZ(p.y);
   const foot = mProject(X, 0, Z); if (!foot) return;
+  const sh = mProject(X, 1.15, Z); if (!sh) return;
   const head = mProject(X, 1.8, Z); if (!head) return;
   const sc = foot.scale;
-  mctx.fillStyle = 'rgba(0,0,0,0.28)';
-  mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(3, 0.6 * sc), Math.max(1.5, 0.2 * sc), 0, 0, Math.PI * 2); mctx.fill();
   const col = side === 'me' ? '#3f8efc' : '#ff5d5d';
   const dark = side === 'me' ? '#1f5fb0' : '#b02424';
+  // тень
+  const fa = mFog(foot.depth);
+  mctx.fillStyle = 'rgba(0,0,0,' + (0.28 * (1 - fa)) + ')';
+  mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(3, 0.6 * sc), Math.max(1.5, 0.2 * sc), 0, 0, Math.PI * 2); mctx.fill();
+  // тело (капсула)
   mctx.lineCap = 'round';
-  mctx.strokeStyle = dark; mctx.lineWidth = Math.max(3, 0.6 * sc);
+  mctx.strokeStyle = dark; mctx.lineWidth = Math.max(3, 0.62 * sc);
   mctx.beginPath(); mctx.moveTo(foot.x, foot.y); mctx.lineTo(head.x, head.y); mctx.stroke();
-  mctx.strokeStyle = col; mctx.lineWidth = Math.max(2, 0.45 * sc);
-  mctx.beginPath(); mctx.moveTo(foot.x, foot.y); mctx.lineTo(head.x, head.y); mctx.stroke();
-  const hr = Math.max(2.5, 0.3 * sc);
+  // торс (объём)
+  mctx.beginPath(); mctx.ellipse(sh.x, sh.y, Math.max(3, 0.5 * sc), Math.max(1.5, 0.2 * sc), 0, 0, Math.PI * 2);
+  const cg = mctx.createLinearGradient(sh.x, sh.y - 0.2 * sc, sh.x, sh.y + 0.2 * sc);
+  cg.addColorStop(0, col); cg.addColorStop(1, dark);
+  mctx.fillStyle = cg; mctx.fill();
+  // голова
+  const hr = Math.max(2.5, 0.32 * sc);
   mctx.beginPath(); mctx.arc(head.x, head.y, hr, 0, Math.PI * 2);
   mctx.fillStyle = side === 'me' ? '#cfe3ff' : '#ffd6d6'; mctx.fill();
   mctx.strokeStyle = dark; mctx.lineWidth = 1.5; mctx.stroke();
+  // кольцо управления
   if (isCtl) {
     mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(5, 0.85 * sc), Math.max(2.5, 0.28 * sc), 0, 0, Math.PI * 2);
     mctx.strokeStyle = '#ffe66b'; mctx.lineWidth = 2.5; mctx.stroke();
   }
+  // рейтинг
   mctx.font = 'bold ' + Math.max(8, Math.round(0.42 * sc)) + 'px sans-serif';
   mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
   mctx.lineWidth = 2.5; mctx.strokeStyle = 'rgba(0,0,0,0.6)';
@@ -566,7 +583,8 @@ function mDrawBall() {
   const foot = mProject(X, 0, Z); if (!foot) return;
   const sc = foot.scale;
   const shrink = clamp(1 - h / 12, 0.3, 1);
-  mctx.fillStyle = 'rgba(0,0,0,0.3)';
+  const fa = mFog(foot.depth);
+  mctx.fillStyle = 'rgba(0,0,0,' + (0.3 * shrink * (1 - fa)) + ')';
   mctx.beginPath(); mctx.ellipse(foot.x, foot.y, Math.max(2, 0.45 * sc * shrink), Math.max(1, 0.16 * sc * shrink), 0, 0, Math.PI * 2); mctx.fill();
   const c = mProject(X, h + 0.4, Z); if (!c) return;
   const r = Math.max(3, 0.42 * c.scale);

@@ -617,16 +617,18 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
 
 /* ---------- ДЖОЙСТИК МАТЧА ---------- */
 .match-joy {
-  display: flex; align-items: center; justify-content: center; gap: 14px;
-  margin: 12px auto; max-width: 460px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin: 12px auto; max-width: 600px; flex-wrap: wrap;
 }
 .mj-btn {
   background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
-  padding: 12px 16px; text-align: center; font-weight: 800; cursor: pointer; user-select: none;
-  min-width: 96px;
+  padding: 10px 12px; text-align: center; font-weight: 800; cursor: pointer; user-select: none;
+  min-width: 84px; line-height: 1.2;
 }
 .mj-btn:active { border-color: var(--accent); background: var(--panel2); }
 .mj-btn small { display: block; color: var(--text-dim); font-weight: 600; margin-top: 3px; font-size: 11px; }
+.mj-sprint { border-color: #e0a13a; }
+.mj-sprint:active { border-color: #ffc76a; background: var(--panel2); }
 .mj-stick {
   position: relative; width: 118px; height: 118px; border-radius: 50%;
   background: var(--panel); border: 2px solid var(--border);

@@ -165,6 +165,7 @@ const BASES = [
 ];
 const ARENA = { name: '⚔ Мультиплеер-арена', x: 75, z: 75, size: 20 };
 const MARKET = { name: 'Магазины', color: '#ffd23d', x: 75, z: 170 };
+const STADIUM = { name: '🏟️ Стадион', x: 156, z: 150, w: 36, d: 30 };
 
 const WORLD_SIZE = 180;
 const PLAYER_SPAWN = { x: 60, z: 80, yaw: 1.57, facing: 1.57 };

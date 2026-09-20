@@ -816,7 +816,7 @@ function updateMatchUI() {
 }
 
 function renderMatchScreen() {
-  $('#match-title').textContent = '⚽ Матч против ' + match.opp.name;
+  $('#match-title').textContent = (match.opp.venue ? match.opp.venue + ' · ' : '⚽ ') + 'Матч против ' + match.opp.name;
   $('#match-log').innerHTML = '';
   $('#match-pause').textContent = '⏸ Пауза';
   match.paused = false;
@@ -1274,11 +1274,11 @@ function showEndCard(text, fans) {
     <div class="end-reward">+${fans} 👥 фанатов</div>
     <div class="ms-line">Против: ${match.opp.emoji} ${match.opp.name}</div>
     <div class="end-btns">
-      <button class="btn btn-primary" id="end-arena">⚔ В арену</button>
+      <button class="btn btn-primary" id="end-arena">${match.opp.venue ? '🏟️ На стадион' : '⚔ В арену'}</button>
       <button class="btn" id="end-world">В мир</button>
     </div>`;
   $('#match-end').classList.remove('hidden');
-  $('#end-arena').onclick = () => { $('#match-end').classList.add('hidden'); showScreen('arena'); };
+  $('#end-arena').onclick = () => { $('#match-end').classList.add('hidden'); if (match.opp.venue) { renderStadium(); showScreen('stadium'); } else showScreen('arena'); };
   $('#end-world').onclick = () => { $('#match-end').classList.add('hidden'); showScreen('world'); };
 }
 

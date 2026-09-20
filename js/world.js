@@ -18,7 +18,8 @@ const FIELDUPG_SIGNS = BASES.map((b, i) => {
 });
 const ARENA_OBJ = { type: 'arena', name: ARENA.name, x: ARENA.x, z: ARENA.z, w: ARENA.size, d: ARENA.size, solid: false };
 const MARKET_OBJ = { type: 'market', name: MARKET.name, color: MARKET.color, x: MARKET.x, z: MARKET.z, w: 16, d: 16, solid: true };
-const INTERACTIVES = [...SPINNERS, ...FIELDS, ...LUCK_SIGNS, ...FIELDUPG_SIGNS, ARENA_OBJ, MARKET_OBJ];
+const STADIUM_OBJ = { type: 'stadium', name: STADIUM.name, x: STADIUM.x, z: STADIUM.z, w: STADIUM.w, d: STADIUM.d, solid: false };
+const INTERACTIVES = [...SPINNERS, ...FIELDS, ...LUCK_SIGNS, ...FIELDUPG_SIGNS, ARENA_OBJ, MARKET_OBJ, STADIUM_OBJ];
 const SOLID_OBJECTS = INTERACTIVES.filter(o => o.solid);
 
 function activeInteractives() {
@@ -37,6 +38,7 @@ function inFieldArea(x, z) {
     if (Math.hypot(x - fs.x, z - fs.z) < 4) return true;
   }
   if (Math.abs(x - ARENA.x) < ARENA.size / 2 + 3 && Math.abs(z - ARENA.z) < ARENA.size / 2 + 3) return true;
+  if (Math.abs(x - STADIUM.x) < STADIUM.w / 2 + 3 && Math.abs(z - STADIUM.z) < STADIUM.d / 2 + 3) return true;
   return false;
 }
 
@@ -284,6 +286,7 @@ function tryEnter() {
     renderFieldScreen(o.idx); showScreen('field');
   }
   else if (o.type === 'arena') { renderArena(); showScreen('arena'); }
+  else if (o.type === 'stadium') { renderStadium(); showScreen('stadium'); }
   else if (o.type === 'market') { showScreen('market'); }
   else if (o.type === 'luck') { renderLuckUpgrades(); showScreen('luck'); }
   else if (o.type === 'fieldupg') { renderFieldUpg(); showScreen('fieldupg'); }
@@ -448,7 +451,7 @@ function drawLabels(cam) {
   const ni = nearestInteractive();
   for (const o of INTERACTIVES) {
     if (o.type === 'spinner' || o.type === 'luck' || o.type === 'fieldupg') continue;
-    const ly = o.type === 'market' ? 7.5 : 6;
+    const ly = o.type === 'market' ? 7.5 : o.type === 'stadium' ? 15 : 6;
     const p = project(cam, o.x, ly, o.z);
     if (!p) continue;
     const near = ni === o;
@@ -505,6 +508,7 @@ function renderWorld() {
   for (const r of ROADS) polys.push(...roadPolys(r, cam));
   polys.push(...marketPolys(cam));
   polys.push(...arenaPolys(cam));
+  polys.push(...stadiumPolys(cam));
   const labels = [];
   const nearBases = [];
   const myHome = homeFieldIndex();
@@ -545,6 +549,7 @@ function promptText(o) {
   if (o.type === 'fieldupg') return '⚽ Табло поля (владение · доход) — нажми E или кликни';
   if (o.type === 'field') return state.held ? '⭐ Поставить ' + state.held.name + ' — E (место подсвечено)' : '🏟️ ' + o.name + ' — E: взять лучшего из запаса или открыть команду';
   if (o.type === 'arena') return '⚔ Арена (матчи 1×1) — нажми E или кликни';
+  if (o.type === 'stadium') return '🏟️ Стадион (матч как в FIFA) — нажми E или кликни';
   return '🏪 ' + MARKET.name + ' — нажми E или кликни';
 }
 

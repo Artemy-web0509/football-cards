@@ -351,6 +351,8 @@ function drawMinimap() {
   m.fillRect(fx(ARENA.x - ARENA.size / 2), fy(ARENA.z - ARENA.size / 2), ARENA.size * sc, ARENA.size * sc);
   m.fillStyle = '#ffb347';
   m.fillRect(fx(MARKET.x - 8), fy(MARKET.z - 8), 16 * sc, 16 * sc);
+  m.fillStyle = 'rgba(180,220,255,0.9)';
+  m.fillRect(fx(STADIUM.x - STADIUM.w / 2), fy(STADIUM.z - STADIUM.d / 2), STADIUM.w * sc, STADIUM.d * sc);
   for (const rp of server.players) {
     m.fillStyle = rp.color || '#ffffff';
     m.beginPath(); m.arc(fx(rp.x), fy(rp.z), 4, 0, Math.PI * 2); m.fill();
@@ -603,6 +605,58 @@ function marketPolys(cam) {
   for (let i = -1; i <= 1; i++) {
     polys.push(...boxPolys({ x: m.x + i * 7, z: m.z, w: 5, d: 5, h: 5, color: '#fffdf2' }, cam));
     polys.push(...boxPolys({ x: m.x + i * 7, z: m.z, w: 5.8, d: 5.8, h: 0.9, color: awnings[i + 1] }, cam));
+  }
+  return polys;
+}
+
+// Большой стадион: трибуны по периметру, зелёное поле с разметкой, прожекторы.
+function stadiumPolys(cam) {
+  const s = STADIUM_OBJ;
+  const x0 = s.x - s.w / 2, x1 = s.x + s.w / 2, z0 = s.z - s.d / 2, z1 = s.z + s.d / 2;
+  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  const polys = [];
+
+  // Приподнятая площадка
+  polys.push(...boxPolys({ x: cx, z: cz, w: s.w, d: s.d, h: 1.0, color: '#9a8a6a' }, cam));
+
+  // Зелёное поле с разметкой внутри
+  const fx0 = x0 + 4, fx1 = x1 - 4, fz0 = z0 + 4, fz1 = z1 - 4;
+  const field = groundPoly(cam, fx0, fz0, fx1, fz1, 1.15, '#3fbf5a');
+  if (field) polys.push(field);
+  const line = (a, b, c, d, col) => { const g = groundPoly(cam, a, b, c, d, 1.18, col, true); if (g) polys.push(g); };
+  line(fx0 - 0.4, fz0 - 0.4, fx1 + 0.4, fz0 + 0.4, '#ffffff');
+  line(fx0 - 0.4, fz1 - 0.4, fx1 + 0.4, fz1 + 0.4, '#ffffff');
+  line(fx0 - 0.4, fz0, fx0 + 0.4, fz1, '#ffffff');
+  line(fx1 - 0.4, fz0, fx1 + 0.4, fz1, '#ffffff');
+  line(fx0, (fz0 + fz1) / 2 - 0.3, fx1, (fz0 + fz1) / 2 + 0.3, 'rgba(255,255,255,0.85)');
+  polys.push(...ringPolys(cam, cx, cz, 3.8, 4.3, 1.22, 1.25, 'rgba(255,255,255,0.85)'));
+
+  // Ворота на торцах поля
+  const gw = s.d * 0.5, gd = 1.1, gh = 2.6;
+  polys.push(...boxPolys({ x: cx, z: fz0 - gd - 0.4, w: gw, d: gd, h: gh, color: '#ffffff' }, cam));
+  polys.push(...boxPolys({ x: cx, z: fz1 + gd + 0.4, w: gw, d: gd, h: gh, color: '#ffffff' }, cam));
+
+  // Трибуны: 4 стороны по периметру
+  const stand = '#e8e2d4', standDark = '#c9c0ac', t = 2.2;
+  polys.push(...boxPolys({ x: cx, z: z0 + t / 2, w: s.w, d: t, h: 6, color: standDark }, cam));
+  polys.push(...boxPolys({ x: cx, z: z1 - t / 2, w: s.w, d: t, h: 6, color: standDark }, cam));
+  polys.push(...boxPolys({ x: x0 + t / 2, z: cz, w: t, d: s.d - t * 2, h: 6, color: standDark }, cam));
+  polys.push(...boxPolys({ x: x1 - t / 2, z: cz, w: t, d: s.d - t * 2, h: 6, color: standDark }, cam));
+  // Верхний ярус трибун (выше поле, чтобы смотрелось объёмно)
+  polys.push(...boxPolys({ x: cx, z: z0 + t + 1.2, w: s.w - 4, d: 1.8, h: 9, color: stand }, cam));
+  polys.push(...boxPolys({ x: cx, z: z1 - t - 1.2, w: s.w - 4, d: 1.8, h: 9, color: stand }, cam));
+  polys.push(...boxPolys({ x: x0 + t + 1.2, z: cz, w: 1.8, d: s.d - 4, h: 9, color: stand }, cam));
+  polys.push(...boxPolys({ x: x1 - t - 1.2, z: cz, w: 1.8, d: s.d - 4, h: 9, color: stand }, cam));
+
+  // Угловые флагштоки
+  for (const [fx, fz] of [[x0, fz0], [x1, fz0], [x0, fz1], [x1, fz1]]) {
+    polys.push(...boxPolys({ x: fx, z: fz, w: 0.4, d: 0.4, h: 4.5, color: '#f5f5f5' }, cam));
+  }
+
+  // Световые башни прожекторов
+  for (const [px, pz] of [[x0 - 1, z0 - 1], [x1 + 1, z0 - 1], [x0 - 1, z1 + 1], [x1 + 1, z1 + 1]]) {
+    polys.push(...boxPolys({ x: px, z: pz, w: 1.4, d: 1.4, h: 14, color: '#6d5a40' }, cam));
+    pushRound(distToCam(px, pz), () => drawDisc(cam, px, 14.8, pz, 2.4, '#fff6c8'));
   }
   return polys;
 }

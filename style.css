@@ -507,6 +507,16 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
 .opp-reward { color: var(--accent2); font-weight: 700; }
 .opp-beaten { color: var(--accent); font-size: 13px; font-weight: 700; }
 
+/* ---------- СТАДИОН (матч как в FIFA) ---------- */
+.stadium-hero {
+  background: linear-gradient(135deg, #1c7a38, #0f5c2c 55%, #134f2a);
+  border: 2px solid var(--accent);
+  border-radius: 16px; padding: 18px; text-align: center; margin-bottom: 16px;
+  box-shadow: 0 4px 18px rgba(20,120,60,.35);
+}
+.stadium-hero-title { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: .5px; }
+.stadium-hero-sub { color: #d8f0dd; font-size: 13px; margin-top: 8px; line-height: 1.5; }
+
 /* ---------- ИТОГ / ТОСТ ---------- */
 .overlay { position: fixed; inset: 0; z-index: 100; background: rgba(6,10,20,.92); display: flex; align-items: center; justify-content: center; padding: 20px; }
 .end-card {

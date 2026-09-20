@@ -8,7 +8,7 @@
 // Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
 (function () {
   try {
-    var V = 'v55';
+    var V = 'v56';
     var prev = localStorage.getItem('fc_ver');
     if (prev !== V) {
       localStorage.removeItem('fc_registry');
@@ -27,7 +27,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="style.css?v=55">
+<link rel="stylesheet" href="style.css?v=56">
 </head>
 <body>
 
@@ -166,6 +166,20 @@
       <button class="btn" id="pvp-leave" style="display:none;">Отменить ожидание</button>
     </div>
   </div>
+</div>
+
+<!-- ============ СТАДИОН (матч как в FIFA) ============ -->
+<div id="screen-stadium" class="screen">
+  <button class="back-btn" data-nav="world">← В мир</button>
+  <h2 class="sc-title">🏟️ Стадион</h2>
+  <div class="stadium-hero">
+    <div class="stadium-hero-title">⚽ Полный матч — как в FIFA</div>
+    <div class="stadium-hero-sub">Настоящее поле с воротами и зрителями. Управляй игроком кольцом, зажимай удар для силы, делай пасы и вразрез.</div>
+  </div>
+  <div class="matchsetup-info">
+    <div class="ms-line" id="stadium-ms-info"></div>
+  </div>
+  <div id="stadium-opponents"></div>
 </div>
 
 <!-- ============ МАГАЗИНЫ ============ -->
@@ -345,25 +359,25 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=55"></script>
-<script src="js/data.js?v=55"></script>
-<script src="js/util.js?v=55"></script>
-<script src="js/auth.js?v=55"></script>
-<script src="js/state.js?v=55"></script>
-<script src="js/economy.js?v=55"></script>
-<script src="js/cards.js?v=55"></script>
-<script src="js/ui.js?v=55"></script>
-<script src="js/world.js?v=55"></script>
-<script src="js/roster.js?v=55"></script>
-<script src="js/screens.js?v=55"></script>
-<script src="js/market.js?v=55"></script>
-<script src="js/match.js?v=55"></script>
-<script src="js/quests.js?v=55"></script>
-<script src="js/decor.js?v=55"></script>
-<script src="js/net.js?v=55"></script>
-<script src="js/admin.js?v=55"></script>
-<script src="js/touch.js?v=55"></script>
-<script src="js/misc.js?v=55"></script>
-<script src="js/main.js?v=55"></script>
+<script src="js/supabase.js?v=56"></script>
+<script src="js/data.js?v=56"></script>
+<script src="js/util.js?v=56"></script>
+<script src="js/auth.js?v=56"></script>
+<script src="js/state.js?v=56"></script>
+<script src="js/economy.js?v=56"></script>
+<script src="js/cards.js?v=56"></script>
+<script src="js/ui.js?v=56"></script>
+<script src="js/world.js?v=56"></script>
+<script src="js/roster.js?v=56"></script>
+<script src="js/screens.js?v=56"></script>
+<script src="js/market.js?v=56"></script>
+<script src="js/match.js?v=56"></script>
+<script src="js/quests.js?v=56"></script>
+<script src="js/decor.js?v=56"></script>
+<script src="js/net.js?v=56"></script>
+<script src="js/admin.js?v=56"></script>
+<script src="js/touch.js?v=56"></script>
+<script src="js/misc.js?v=56"></script>
+<script src="js/main.js?v=56"></script>
 </body>
 </html>

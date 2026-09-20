@@ -189,6 +189,36 @@ function renderArena() {
   renderOpponentsList();
 }
 
+// Стадион: полный 3D-матч как в FIFA. Свой список соперников (не мешает арене).
+function renderStadium() {
+  ensureLineup();
+  if (!$('#stadium-ms-info')) return;
+  const stats = teamStats(state.starters);
+  const f = FORMATIONS[state.formation];
+  $('#stadium-ms-info').innerHTML = 'Мой рейтинг: <b>' + Math.round(stats.overall) + '</b> • Атака ' + Math.round(stats.attack) + ' • Защита ' + Math.round(stats.defense) + '<br>Формация: ' + f.name + ' • Награда за победу — 👥 фанаты';
+  let html = '';
+  for (const o of OPPONENTS) {
+    const beaten = state.beatenOpponents.includes(o.id);
+    const chance = winChance(stats.overall, o.avg);
+    html += `<div class="opp-card" data-st-opp="${o.id}">
+      <div>
+        <div class="opp-name">${o.emoji} ${o.name}</div>
+        <div class="opp-meta">Средний рейтинг ${o.avg} • Ваши шансы ${chance}%</div>
+      </div>
+      <div class="opp-reward">${beaten ? '✅ Побеждён' : '+ ' + o.fansWin + ' 👥'}</div>
+    </div>`;
+  }
+  $('#stadium-opponents').innerHTML = html;
+  $$('#stadium-opponents [data-st-opp]').forEach(c => c.onclick = () => startStadiumMatch(c.dataset.stOpp));
+}
+
+// Запуск матча со стадиона: как в FIFA, с пометкой арены
+function startStadiumMatch(oppId) {
+  const o = OPPONENTS.find(x => x.id === oppId);
+  if (!o) return;
+  beginMatch({ ...o, venue: '🏟️ Стадион' });
+}
+
 function renderOpponentsList() {
   const stats = teamStats(state.starters);
   let html = '';

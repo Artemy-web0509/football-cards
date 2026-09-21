@@ -212,11 +212,11 @@ function renderStadium() {
   $$('#stadium-opponents [data-st-opp]').forEach(c => c.onclick = () => startStadiumMatch(c.dataset.stOpp));
 }
 
-// Запуск матча со стадиона: как в FIFA, с пометкой арены
+// Запуск матча со стадиона: как в FIFA, прямо на поле в мире + пометка арены
 function startStadiumMatch(oppId) {
   const o = OPPONENTS.find(x => x.id === oppId);
   if (!o) return;
-  beginMatch({ ...o, venue: '🏟️ Стадион' });
+  beginMatch({ ...o, venue: '🏟️ Стадион', worldMode: true });
 }
 
 function renderOpponentsList() {

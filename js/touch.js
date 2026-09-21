@@ -85,7 +85,7 @@ function bindTouchControls() {
       const shortTap = !joyMove.moved && (performance.now() - joyMove.t0) < 300;
       joyMove = null;
       if (moveKnob) { moveKnob.classList.remove('active'); updateMoveKnob(moveKnob); }
-      if (shortTap && activeScreen === 'world') tryEnter();
+      if (shortTap && activeScreen === 'world' && !(match && match.worldMode && match.running)) tryEnter();
     };
     moveZone.addEventListener('pointerup', endMove);
     moveZone.addEventListener('pointercancel', endMove);
@@ -122,11 +122,11 @@ function bindTouchControls() {
   }
 
   const eBtn = $('#tc-e');
-  if (eBtn) eBtn.addEventListener('pointerup', ev => { ev.preventDefault(); if (activeScreen === 'world') tryEnter(); });
+  if (eBtn) eBtn.addEventListener('pointerup', ev => { ev.preventDefault(); if (activeScreen === 'world' && !(match && match.worldMode && match.running)) tryEnter(); });
 
   const bBtn = $('#tc-b');
   if (bBtn) bBtn.addEventListener('pointerup', ev => {
     ev.preventDefault();
-    if (activeScreen === 'world' && state) { if (state.held) keepHeld(); else openBackpack(); }
+    if (activeScreen === 'world' && state && !(match && match.worldMode && match.running)) { if (state.held) keepHeld(); else openBackpack(); }
   });
 }

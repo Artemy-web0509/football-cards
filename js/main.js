@@ -44,6 +44,7 @@ function bindGlobal() {
   $$('.device-btn[data-device]').forEach(b => b.onclick = () => setDevice(b.dataset.device));
   bindTouchControls();
   bindMatchControls();
+  bindWorldMatchControls();
 }
 
 // ---------- Главный цикл ----------
@@ -51,7 +52,11 @@ let lastFrame = performance.now();
 function gameLoop(now) {
   const dt = Math.min((now - lastFrame) / 1000, 0.05);
   lastFrame = now;
-  if (activeScreen === 'world' && state) { updateWorld(dt); renderWorld(); }
+  if (activeScreen === 'world' && state && match && match.worldMode && match.running) {
+    updateMatchVisual(dt);
+    renderWorldMatch();
+  }
+  else if (activeScreen === 'world' && state) { updateWorld(dt); renderWorld(); }
   else if (activeScreen === 'match' && match) { updateMatchVisual(dt); renderMatchCanvas(); }
   if (activeScreen === 'world' && state && now - (gameLoop._ls || 0) > 180) {
     gameLoop._ls = now;

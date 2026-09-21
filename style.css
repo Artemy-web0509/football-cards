@@ -652,3 +652,32 @@ body.touch-mode .hud-help, body.touch-mode .hud-cross { display: none; }
   pointer-events: none;
 }
 .mj-pressed { border-color: var(--accent2); }
+
+/* ---------- МАТЧ НА СТАДИОНЕ В МИРЕ ---------- */
+.wm-hud { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 35; pointer-events: none; }
+.wm-top {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(6,16,26,.82); border: 1px solid rgba(255,255,255,.25);
+  border-radius: 14px; padding: 8px 14px; pointer-events: auto; white-space: nowrap;
+}
+.wm-team { font-size: 13px; font-weight: 700; color: #dff5e6; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.wm-score { font-size: 20px; font-weight: 900; color: #fff; min-width: 60px; text-align: center; }
+.wm-min { font-size: 15px; font-weight: 800; color: #ffd23d; }
+.wm-pause, .wm-exit {
+  background: var(--panel); border: 1px solid var(--border); color: #fff;
+  border-radius: 10px; padding: 4px 10px; font-size: 14px; cursor: pointer; font-weight: 800;
+}
+.wm-exit { border-color: #c34a4a; }
+.wm-poss {
+  position: absolute; top: 58px; left: 50%; transform: translateX(-50%);
+  background: rgba(6,16,26,.7); border-radius: 20px; padding: 4px 14px;
+  font-size: 12px; color: #cfe8d9; pointer-events: none; white-space: nowrap;
+}
+.wm-hud .match-joy {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
+  margin: 0; max-width: 92vw;
+}
+body.touch-mode .wm-hud .match-joy { transform: translateX(-50%); }
+.wm-hud.hidden { display: none; }
+#screen-world .wm-hud + #touch-controls { z-index: 36; }

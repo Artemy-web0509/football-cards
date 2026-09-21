@@ -16,11 +16,27 @@ const LUCK_SIGNS = BASES.map((b, i) => {
 const FIELDUPG_SIGNS = BASES.map((b, i) => {
   return { type: 'fieldupg', idx: i, name: '⚽ Табло поля', x: b.x - FIELD_W / 2 - 8, z: b.z + FIELD_GAP + FIELD_D / 2, w: 4, d: 2, solid: false };
 });
-const ARENA_OBJ = { type: 'arena', name: ARENA.name, x: ARENA.x, z: ARENA.z, w: ARENA.size, d: ARENA.size, solid: false };
+const ARENA_OBJ = { type: 'arena', name: ARENA.name, x: ARENA.x, z: ARENA.z, w: ARENA.size, d: ARENA.size, solid: true };
 const MARKET_OBJ = { type: 'market', name: MARKET.name, color: MARKET.color, x: MARKET.x, z: MARKET.z, w: 16, d: 16, solid: true };
 const STADIUM_OBJ = { type: 'stadium', name: STADIUM.name, x: STADIUM.x, z: STADIUM.z, w: STADIUM.w, d: STADIUM.d, solid: false };
 const INTERACTIVES = [...SPINNERS, ...FIELDS, ...LUCK_SIGNS, ...FIELDUPG_SIGNS, ARENA_OBJ, MARKET_OBJ, STADIUM_OBJ];
 const SOLID_OBJECTS = INTERACTIVES.filter(o => o.solid);
+// Стены-трибуны стадиона (поле внутри проходимо; вход с запада — разрыв в левой трибуне)
+const STADIUM_WALLS = (() => {
+  const s = STADIUM_OBJ;
+  const x0 = s.x - s.w / 2, x1 = s.x + s.w / 2, z0 = s.z - s.d / 2, z1 = s.z + s.d / 2;
+  const t = 2.2, band = s.d - t * 2;
+  const gapA = s.z - 2.6, gapB = s.z + 2.6;
+  const top = [x0 + t / 2, (z0 + t + gapA) / 2, t, gapA - (z0 + t)];
+  const bot = [x0 + t / 2, (gapB + z1 - t) / 2, t, z1 - t - gapB];
+  return [
+    { x: s.x, z: z0 + t / 2, w: s.w, d: t },
+    { x: s.x, z: z1 - t / 2, w: s.w, d: t },
+    { x: top[0], z: top[1], w: t, d: top[3] },
+    { x: bot[0], z: bot[1], w: t, d: bot[3] },
+    { x: x1 - t / 2, z: s.z, w: t, d: band },
+  ];
+})();
 
 function activeInteractives() {
   const my = homeFieldIndex();
@@ -120,6 +136,7 @@ const keys = {};
 document.addEventListener('keydown', e => {
   keys[e.code] = true;
   if (e.code === 'Escape') { if (!$('#bench-modal').classList.contains('hidden')) hideBenchModal(); return; }
+  if (match && match.worldMode && match.running) return;
   if (activeScreen === 'world') {
     if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') e.preventDefault();
     if (e.code === 'KeyE') tryEnter();
@@ -138,11 +155,13 @@ wcanvas.addEventListener('contextmenu', e => e.preventDefault());
 wcanvas.addEventListener('mousedown', e => { if (e.button === 2) { camDrag = true; camDragX = e.clientX; } });
 window.addEventListener('mousemove', e => {
   if (!camDrag || activeScreen !== 'world' || !state) return;
+  if (match && match.worldMode && match.running) return;
   state.world.yaw += (e.clientX - camDragX) * 0.005;
   camDragX = e.clientX;
 });
 window.addEventListener('mouseup', e => { if (e.button === 2) camDrag = false; });
 wcanvas.addEventListener('click', e => {
+  if (match && match.worldMode && match.running) return;
   if (e.button === 0 && activeScreen === 'world' && state && nearestInteractive()) {
     const o = nearestInteractive();
     if (o.type === 'luck' || o.type === 'fieldupg') buySignUpgrade(o);
@@ -226,6 +245,12 @@ function projectPoly(cam, wp) {
 function worldCollides(x, z) {
   if (x < 2 || x > WORLD_SIZE - 2 || z < 2 || z > WORLD_SIZE - 2) return true;
   for (const o of SOLID_OBJECTS) {
+    const rx = clamp(x, o.x - o.w / 2, o.x + o.w / 2);
+    const rz = clamp(z, o.z - o.d / 2, o.z + o.d / 2);
+    const dx = x - rx, dz = z - rz;
+    if (dx * dx + dz * dz < 2.2) return true;
+  }
+  for (const o of STADIUM_WALLS) {
     const rx = clamp(x, o.x - o.w / 2, o.x + o.w / 2);
     const rz = clamp(z, o.z - o.d / 2, o.z + o.d / 2);
     const dx = x - rx, dz = z - rz;

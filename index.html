@@ -8,7 +8,7 @@
 // Автосброс старых данных при обновлении версии (работает даже в обычном браузере)
 (function () {
   try {
-    var V = 'v56';
+    var V = 'v57';
     var prev = localStorage.getItem('fc_ver');
     if (prev !== V) {
       localStorage.removeItem('fc_registry');
@@ -27,7 +27,7 @@
   } catch (e) {}
 })();
 </script>
-<link rel="stylesheet" href="style.css?v=56">
+<link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
 
@@ -82,6 +82,27 @@
   <div class="hud-held hidden" id="held-card"></div>
   <div class="hud-help">W A S D — ходить • ← → или ПКМ — камера • E или клик — действие • B — рюкзак</div>
   <canvas id="minimap" width="180" height="180"></canvas>
+  <div id="wm-hud" class="wm-hud hidden">
+    <div class="wm-top">
+      <div class="wm-team" id="wm-team-a">Моя команда</div>
+      <div class="wm-score" id="wm-score">0 : 0</div>
+      <div class="wm-team" id="wm-team-b">Бот</div>
+      <div class="wm-min" id="wm-min">0'</div>
+      <button class="wm-pause" id="wm-pause">⏸</button>
+      <button class="wm-exit" id="wm-exit">✕</button>
+    </div>
+    <div class="wm-poss" id="wm-poss"></div>
+    <div class="match-joy" id="wm-joy">
+      <div class="mj-btn mj-sprint" id="wm-sprint">🏃 Спринт<br><small>Shift</small></div>
+      <div class="mj-btn" id="wm-pass">🎯 Пас<br><small>E</small></div>
+      <div class="mj-stick" id="wm-stick">
+        <div class="mj-knob" id="wm-knob"></div>
+      </div>
+      <div class="mj-btn" id="wm-through">↗ Вразрез<br><small>R</small></div>
+      <div class="mj-btn" id="wm-switch">🔄 Смена<br><small>Q</small></div>
+      <div class="mj-btn" id="wm-shoot">⚽ Удар<br><small>J</small></div>
+    </div>
+  </div>
   <div id="touch-controls" class="touch-controls hidden">
     <div class="tc-zone" id="tc-move-zone">
       <div class="tc-joystick" id="tc-move-stick">
@@ -359,25 +380,25 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js?v=56"></script>
-<script src="js/data.js?v=56"></script>
-<script src="js/util.js?v=56"></script>
-<script src="js/auth.js?v=56"></script>
-<script src="js/state.js?v=56"></script>
-<script src="js/economy.js?v=56"></script>
-<script src="js/cards.js?v=56"></script>
-<script src="js/ui.js?v=56"></script>
-<script src="js/world.js?v=56"></script>
-<script src="js/roster.js?v=56"></script>
-<script src="js/screens.js?v=56"></script>
-<script src="js/market.js?v=56"></script>
-<script src="js/match.js?v=56"></script>
-<script src="js/quests.js?v=56"></script>
-<script src="js/decor.js?v=56"></script>
-<script src="js/net.js?v=56"></script>
-<script src="js/admin.js?v=56"></script>
-<script src="js/touch.js?v=56"></script>
-<script src="js/misc.js?v=56"></script>
-<script src="js/main.js?v=56"></script>
+<script src="js/supabase.js?v=57"></script>
+<script src="js/data.js?v=57"></script>
+<script src="js/util.js?v=57"></script>
+<script src="js/auth.js?v=57"></script>
+<script src="js/state.js?v=57"></script>
+<script src="js/economy.js?v=57"></script>
+<script src="js/cards.js?v=57"></script>
+<script src="js/ui.js?v=57"></script>
+<script src="js/world.js?v=57"></script>
+<script src="js/roster.js?v=57"></script>
+<script src="js/screens.js?v=57"></script>
+<script src="js/market.js?v=57"></script>
+<script src="js/match.js?v=57"></script>
+<script src="js/quests.js?v=57"></script>
+<script src="js/decor.js?v=57"></script>
+<script src="js/net.js?v=57"></script>
+<script src="js/admin.js?v=57"></script>
+<script src="js/touch.js?v=57"></script>
+<script src="js/misc.js?v=57"></script>
+<script src="js/main.js?v=57"></script>
 </body>
 </html>

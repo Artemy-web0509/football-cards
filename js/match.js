@@ -64,8 +64,21 @@ function beginMatch(o) {
   };
   buildMatchTeams();
   resetKickoff(match.kickSide);
+  if (o.worldMode) {
+    // Матч прямо на стадионе в мире: возвращаемся на экран мира, рисуем на мировом канвасе.
+    match.worldMode = true;
+    match.worldPos = { ...state.world };
+    showScreen('world');
+    $('#wm-hud').classList.remove('hidden');
+    $('#minimap').classList.add('hidden');
+    $('#interact-prompt').classList.add('hidden');
+    $('#touch-controls').classList.add('hidden');
+    updateWorldMatchUI();
+    return;
+  }
   showScreen('match');
   resizeMatch();
+  mctx = mc.getContext('2d');
 }
 
 function buildMatchTeams() {
@@ -813,6 +826,18 @@ function updateMatchUI() {
   $('#match-poss').textContent = `Владение: вы ${pA}% — ${100 - pA}% (${match.opp.emoji} ${match.opp.name})`;
   $('#subs-left').textContent = 3 - match.subsUsed;
   $('#m-team-b').textContent = match.opp.emoji + ' ' + match.opp.name;
+  if (match.worldMode) updateWorldMatchUI();
+}
+
+function updateWorldMatchUI() {
+  if (!match) return;
+  const s = $('#wm-score'), mm = $('#wm-minute'), p = $('#wm-poss');
+  if (s) s.textContent = match.myGoals + ' : ' + match.botGoals;
+  if (mm) mm.textContent = match.minute + "'";
+  if (p) {
+    const pA = possessionPct();
+    p.textContent = `Владение: вы ${pA}% — ${100 - pA}% (${match.opp.emoji} ${match.opp.name})`;
+  }
 }
 
 function renderMatchScreen() {
@@ -825,9 +850,18 @@ function renderMatchScreen() {
 
 // ---------- Визуализация 3D ----------
 const mc = $('#match-canvas');
-const mctx = mc.getContext('2d');
+let mctx = mc.getContext('2d');
 let mW = 560, mH = 360;
 const PITCH_LEN = 105, PITCH_WID = 68;
+
+// Рендер матча прямо на мировом канвасе (матч на стадионе в мире)
+function renderWorldMatch() {
+  if (!match || !wc) return;
+  mctx = wc;
+  mW = W;
+  mH = H;
+  renderMatchCanvas();
+}
 
 // толпа на трибунах (детерминированно)
 const CROWD = [];
@@ -1250,6 +1284,8 @@ function endMatch() {
   if (!match) return;
   match.running = false;
   clearInterval(match.timer);
+  const wasWorld = match.worldMode;
+  if (wasWorld) resetWorldMatch();
   const won = match.myGoals > match.botGoals;
   const draw = match.myGoals === match.botGoals;
   let fans = 10, text = 'Поражение 😔';
@@ -1267,6 +1303,11 @@ function endMatch() {
 }
 
 function showEndCard(text, fans) {
+  // Всегда убираем оверлей world-матча (если он был) и возвращаем миникарту.
+  $('#wm-hud').classList.add('hidden');
+  const mm = $('#minimap'); if (mm) mm.classList.remove('hidden');
+  const itp = $('#interact-prompt'); if (itp) itp.classList.remove('hidden');
+  if (typeof applyTouchMode === 'function') applyTouchMode();
   const el = $('#end-card');
   el.innerHTML = `
     <h2>${text}</h2>
@@ -1341,8 +1382,69 @@ function bindMatchControls() {
   bindMatchJoystick();
 }
 
+function bindWorldMatchControls() {
+  const pause = $('#wm-pause');
+  if (pause) pause.onclick = () => { if (match) { match.paused = !match.paused; pause.textContent = match.paused ? '▶' : '⏸'; } };
+  const exit = $('#wm-exit');
+  if (exit) exit.onclick = abortWorldMatch;
+  const passBtn = $('#wm-pass');
+  if (passBtn) {
+    passBtn.onclick = doPass;
+    passBtn.addEventListener('pointerdown', e => { e.preventDefault(); doPass(); });
+  }
+  const shootBtn = $('#wm-shoot');
+  if (shootBtn) {
+    shootBtn.onclick = () => doShoot(0.8);
+    shootBtn.addEventListener('pointerdown', e => { e.preventDefault(); if (match) { match.charging = true; match.charge = 0; } });
+    shootBtn.addEventListener('pointerup', () => { if (match) { match.charging = false; doShoot(match.charge || 0.8); match.charge = 0; } });
+    shootBtn.addEventListener('pointerleave', () => { if (match && match.charging) { match.charging = false; doShoot(match.charge || 0.8); match.charge = 0; } });
+  }
+  const throughBtn = $('#wm-through');
+  if (throughBtn) {
+    throughBtn.onclick = doThrough;
+    throughBtn.addEventListener('pointerdown', e => { e.preventDefault(); doThrough(); });
+  }
+  const switchBtn = $('#wm-switch');
+  if (switchBtn) {
+    switchBtn.onclick = switchPlayer;
+    switchBtn.addEventListener('pointerdown', e => { e.preventDefault(); switchPlayer(); });
+  }
+  const sprintBtn = $('#wm-sprint');
+  if (sprintBtn) {
+    sprintBtn.addEventListener('pointerdown', e => { e.preventDefault(); if (match) { match.sprint = true; match.sprintBtn = true; } });
+    sprintBtn.addEventListener('pointerup', () => { if (match) { match.sprintBtn = false; match.sprint = false; } });
+    sprintBtn.addEventListener('pointerleave', () => { if (match) { match.sprintBtn = false; match.sprint = false; } });
+  }
+  bindWorldMatchJoystick();
+}
+
+function abortWorldMatch() {
+  if (!match || !match.worldMode) return;
+  match.running = false;
+  clearInterval(match.timer);
+  resetWorldMatch();
+  toast('Матч прерван — возврат в мир 🏟️');
+  $('#wm-hud').classList.add('hidden');
+  $('#minimap').classList.remove('hidden');
+  $('#touch-controls').classList.remove('hidden');
+}
+
+function resetWorldMatch() {
+  if (!match) return;
+  match.worldMode = false;
+  delete match.worldPos;
+}
+
 function bindMatchJoystick() {
-  const stick = $('#mj-stick'), knob = $('#mj-knob');
+  bindAnyJoystick('#mj-stick', '#mj-knob');
+}
+
+function bindWorldMatchJoystick() {
+  bindAnyJoystick('#wm-stick', '#wm-knob');
+}
+
+function bindAnyJoystick(stickSel, knobSel) {
+  const stick = $(stickSel), knob = $(knobSel);
   if (!stick || !knob) return;
   const R = 40;
   let dragging = false;
@@ -1439,7 +1541,7 @@ function mDt() {
 let mdt = 0.016;
 
 document.addEventListener('keydown', e => {
-  if (!match || activeScreen !== 'match') return;
+  if (!match || !(activeScreen === 'match' || (activeScreen === 'world' && match.worldMode))) return;
   const k = e.key;
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Spacebar'].includes(k)) e.preventDefault();
   if (k === 'Escape') return;
